@@ -1,8 +1,15 @@
+import Player from "./Player.js";
+
 (async () => {
+    const grid = [];
+
+    // Get data
     const sizeRes = await fetch("/grid-size");
     const size = await sizeRes.json();
 
-    const grid = [];
+    const playerRes = await fetch("/players");
+    const players = await playerRes.json();
+    console.log(players)
 
     createGrid(document.body, size.width, size.height, 50, 50, grid);
 
@@ -42,8 +49,8 @@
                 box.addEventListener("click", () => {
                     for (let i = -1; i <= 1; i++) {
                         for (let j = -1; j <= 1; j++) {
-                            if (grid[row+i][col+j] && !(i === 0 && j === 0)) {
-                                colorCanvas(grid[row+i][col+j], "#ff0000")
+                            if (grid[row + i][col + j] && !(i === 0 && j === 0)) {
+                                colorCanvas(grid[row + i][col + j], "#ff0000")
                             }
                         }
                     }
