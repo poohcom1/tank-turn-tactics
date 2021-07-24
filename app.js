@@ -1,27 +1,33 @@
 require('dotenv').config();
-const express = require("express");
-const path = require("path");
-const mongoose = require("mongoose")
+const express = require('express');
+const path = require('path');
+const mongoose = require('mongoose')
 
 // Models
-const User = require("./models/user.js")
+const User = require('./models/user_model.js')
+const Game = require('./models/game_model.js')
 
+const app = express();
 
-const app = express()
+// Configs
+app.set('view engine', 'ejs')
+app.use(express.urlencoded({ extended: true }))
 
-// Serve pages
+// Serve static
 app.use(express.static(path.join(__dirname, 'public')))
+app.use('/css', express.static(path.join(__dirname, 'public/css')))
+app.use('/js', express.static(path.join(__dirname, 'public/js')))
+
 
 /* --------------------------------- Database ------------------------------- */
 const dbUri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.DB_HOST}/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 
-mongoose.connect(dbUri, { useNewUrlParser: true, useUnifiedTopology: true})
-    .then(res => {
-        console.log("Connected to database");
-        /* App started here */
-        app.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));
+mongoose.connect(dbUri, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => {
+        console.log('Connected to database');
+        app.emit("ready")
     })
-    .catch(err => console.log("[Database error] " + err));
+    .catch(err => console.log('[Database error] ' + err));
 
 function addUser(username, uid) {
     const user = new User({
@@ -29,63 +35,59 @@ function addUser(username, uid) {
         uid: uid
     })
 
-    user.save();
+    return user.save();
+}
+
+function addGame(name, size, actionsPerDay, actionsPerInterval, tieCount,
+    allowVoteChange,
+    doActionQueue,
+    doBroadcastAction,
+    doFogOfWar,
+    doBounty,
+    doEscort) {
+    const game = new Game({
+        name: name,
+        size: size,
+        actionsPerDay: actionsPerDay,
+        actionsPerInterval: actionsPerInterval,
+        tieCount: tieCount,
+        allowVoteChange: allowVoteChange,
+        doActionQueue: doActionQueue,
+        doBroadcastAction: doBroadcastAction,
+        doFogOfWar: doFogOfWar,
+        doBounty: doBounty,
+        doEscort: doEscort
+    })
+
+    return game.save();
 }
 
 
-/* ---------------------------------- Auth ---------------------------------- */
+// Routes
 
-/* -------------------------------- Rest API -------------------------------- */
+app.get('/', (req, res) => {
+    res.render('index')
+})
 
-// Auth
-app.get('/add-user', (req, res) => {
+// body: email, username, password
+app.get('/login', (req, res) => {
+    res.render('login')
+})
+
+app.post('/register', (req, res) => {
 
 })
 
-
-// Game data
-
-/**
- * Get grid size for session
- */
-app.get("/grid-size", (req, res) => {
-    res.send({ width: 10, height: 10 })
-})
-
-/**
- * Get players (dummy function currently)
- */
-app.get("/players", (req, res) => {
-
+app.get('/register', (req, res) => {
+    res.render('register')
 })
 
 
-// Game actions
-
-app.get("/move", (req, res) => {
+app.post('/register', (req, res) => {
 
 })
 
-// Game creation -- Schemas
-
-/**
- * @typedef {Object} Game
- * @property {number} id
- * @property {number} width
- * @property {number} height
- * @property {array<Player.id>} players
- */
-
-
-/**
- * @typedef {Object} Player
- * @property {number} id
- * @property {number} game_id Foreign key of game table
- * @property {string} name
- * @property {number} x
- * @property {number} y
- * @property {number} health
- * @property {number} actions
- * @property {number} range
- */
-
+app.on("ready", () => {
+    /* App started here */
+    app.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));
+})
