@@ -1,10 +1,21 @@
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
 
-const playerSchema = new Schema({
+const playerSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true
     },
+    position: {
+        x: Number,
+        y: Number
+    },
+    actions: {
+        type: Number,
+        default: 1
+    },
+    range: {
+        type: Number,
+        default: 1
+    }
 
 });

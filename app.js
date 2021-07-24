@@ -3,13 +3,17 @@ const express = require("express");
 const path = require("path");
 const mongoose = require("mongoose")
 
+// Models
+const User = require("./models/user.js")
+
+
 const app = express()
 
 // Serve pages
 app.use(express.static(path.join(__dirname, 'public')))
 
 /* --------------------------------- Database ------------------------------- */
-const dbUri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.DB_HOST}/${process.env.DATABASE}?retryWrites=true&w=majority`;
+const dbUri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.DB_HOST}/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 
 mongoose.connect(dbUri, { useNewUrlParser: true, useUnifiedTopology: true})
     .then(res => {
@@ -19,10 +23,25 @@ mongoose.connect(dbUri, { useNewUrlParser: true, useUnifiedTopology: true})
     })
     .catch(err => console.log("[Database error] " + err));
 
+function addUser(username, uid) {
+    const user = new User({
+        username: username,
+        uid: uid
+    })
+
+    user.save();
+}
 
 
+/* ---------------------------------- Auth ---------------------------------- */
 
 /* -------------------------------- Rest API -------------------------------- */
+
+// Auth
+app.get('/add-user', (req, res) => {
+
+})
+
 
 // Game data
 
