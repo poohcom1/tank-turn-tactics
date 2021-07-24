@@ -1,7 +1,7 @@
+require('dotenv').config();
 const express = require("express");
 const path = require("path");
-require('dotenv').config();
-const mysql = require("mysql");
+const mongoose = require("mongoose")
 
 const app = express()
 
@@ -9,14 +9,18 @@ const app = express()
 app.use(express.static(path.join(__dirname, 'public')))
 
 /* --------------------------------- Database ------------------------------- */
-const connection = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: 'tank_tactics'
-});
+const dbUri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@tank-turn-tactics.frtgj.mongodb.net/${process.env.DATABASE}?retryWrites=true&w=majority`;
 
-connection.connect();
+mongoose.connect(dbUri, { useNewUrlParser: true, useUnifiedTopology: true})
+    .then(res => {
+        console.log("Connected to database");
+        /* App started here */
+        app.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));
+    })
+    .catch(err => console.log("[Database error] " + err));
+
+
+
 
 /* -------------------------------- Rest API -------------------------------- */
 
@@ -30,35 +34,34 @@ app.get("/grid-size", (req, res) => {
 })
 
 /**
- * Get players
+ * Get players (dummy function currently)
  */
 app.get("/players", (req, res) => {
-    const players = connection.query("SELECT * FROM player", (err, results, fields) => {
-        if (err) res.status(500);
 
-        res.send(results);
-    })
 })
 
 
-/**
- * Get 
- */
-
 // Game actions
 
-// Game creation
+app.get("/move", (req, res) => {
+
+})
+
+// Game creation -- Schemas
 
 /**
  * @typedef {Object} Game
+ * @property {number} id
  * @property {number} width
  * @property {number} height
- * @property {array} players
+ * @property {array<Player.id>} players
  */
 
 
 /**
  * @typedef {Object} Player
+ * @property {number} id
+ * @property {number} game_id Foreign key of game table
  * @property {string} name
  * @property {number} x
  * @property {number} y
@@ -67,4 +70,3 @@ app.get("/players", (req, res) => {
  * @property {number} range
  */
 
-app.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`))
