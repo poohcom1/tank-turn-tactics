@@ -9,7 +9,7 @@ const app = express()
 app.use(express.static(path.join(__dirname, 'public')))
 
 /* --------------------------------- Database ------------------------------- */
-const dbUri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@tank-turn-tactics.frtgj.mongodb.net/${process.env.DATABASE}?retryWrites=true&w=majority`;
+const dbUri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.DB_HOST}/${process.env.DATABASE}?retryWrites=true&w=majority`;
 
 mongoose.connect(dbUri, { useNewUrlParser: true, useUnifiedTopology: true})
     .then(res => {
