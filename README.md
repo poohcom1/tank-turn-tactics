@@ -8,6 +8,7 @@
 ## Project Structure
 ```
 root
+├── config      # setup for libraries
 ├── controllers # db controllers
 ├── libs        # utility modules
 ├── models      # db schema

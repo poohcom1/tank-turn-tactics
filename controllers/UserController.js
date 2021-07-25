@@ -8,7 +8,7 @@ const User = require('../models/UserModel.js')
  * @param salt
  * @return {Promise<Document<any, any, unknown>>}
  */
-function createUser(email, username, hash, salt) {
+module.exports.createUser = function (email, username, hash, salt) {
     const user = new User({
         email,
         username,
