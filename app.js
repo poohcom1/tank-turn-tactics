@@ -1,93 +1,67 @@
-require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const passport = require("passport");
+require('ejs')
 
-// Models
-const User = require('./models/user_model.js')
-const Game = require('./models/game_model.js')
+const routes = require('./routes')
 
+
+if (process.env.NODE_ENV === "development") require('dotenv').config(); // Only use .env in development mode
+
+// Init app
 const app = express();
 
-// Configs
+// App configs
 app.set('view engine', 'ejs')
+
+// Middlewares
+app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// Serve static
+// Serve static resources
 app.use(express.static(path.join(__dirname, 'public')))
 app.use('/css', express.static(path.join(__dirname, 'public/css')))
 app.use('/js', express.static(path.join(__dirname, 'public/js')))
 
-
 /* --------------------------------- Database ------------------------------- */
 const dbUri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.DB_HOST}/${process.env.DB_NAME}?retryWrites=true&w=majority`;
+const dbOptions = { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true }
 
-mongoose.connect(dbUri, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => {
-        console.log('Connected to database');
-        app.emit("ready")
+// Connect to database
+mongoose.connect(dbUri, dbOptions)
+    .then(mongooseConnection => {
+        // Create session with connect mongo
+        app.use(session({
+            secret: process.env.SESSION_SECRET,
+            resave: false,
+            saveUninitialized: true,
+            store: MongoStore.create({
+                client: mongooseConnection.connection.getClient()
+            }),
+            cookie: {
+                maxAge: 1000 * 60 * 60 * 24
+            }
+        }))
+
+        console.log(`[mongodb] Connected to database <${process.env.DB_NAME}>`);
+        app.emit("ready");
     })
     .catch(err => console.log('[Database error] ' + err));
 
-function addUser(username, uid) {
-    const user = new User({
-        username: username,
-        uid: uid
-    })
 
-    return user.save();
-}
+// Passport setup
+require('./config/passport.js')
 
-function addGame(name, size, actionsPerDay, actionsPerInterval, tieCount,
-    allowVoteChange,
-    doActionQueue,
-    doBroadcastAction,
-    doFogOfWar,
-    doBounty,
-    doEscort) {
-    const game = new Game({
-        name: name,
-        size: size,
-        actionsPerDay: actionsPerDay,
-        actionsPerInterval: actionsPerInterval,
-        tieCount: tieCount,
-        allowVoteChange: allowVoteChange,
-        doActionQueue: doActionQueue,
-        doBroadcastAction: doBroadcastAction,
-        doFogOfWar: doFogOfWar,
-        doBounty: doBounty,
-        doEscort: doEscort
-    })
-
-    return game.save();
-}
-
+app.use(passport.initialize())
+app.use(passport.session())
 
 // Routes
-
-app.get('/', (req, res) => {
-    res.render('index')
-})
-
-// body: email, username, password
-app.get('/login', (req, res) => {
-    res.render('login')
-})
-
-app.post('/register', (req, res) => {
-
-})
-
-app.get('/register', (req, res) => {
-    res.render('register')
-})
-
-
-app.post('/register', (req, res) => {
-
-})
+app.use(routes)
 
 app.on("ready", () => {
     /* App started here */
-    app.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));
+    app.listen(process.env.PORT, () => console.log(`[app] Server running on port ${process.env.PORT} in <${process.env.NODE_ENV}> mode`));
 })
