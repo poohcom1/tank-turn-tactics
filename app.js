@@ -51,9 +51,21 @@ app.use(passport.session())
 require('./routes')(app)
 
 // Error handling
-app.use((err, req, res, next) => {
-    res.status(500).send('Something broke!')
-})
+// app.use((req, res, next) => {
+//     const error = new Error("Not found");
+//     error.status = 404;
+//     next(error);
+// });
+//
+// // error handler middleware
+// app.use((error, req, res, next) => {
+//     res.status(error.status || 500).send({
+//         error: {
+//             status: error.status || 500,
+//             message: error.message || 'Internal Server Error',
+//         },
+//     });
+// });
 
 mongoosePromise.then(() => {
     /* App started here */
