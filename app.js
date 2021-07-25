@@ -1,93 +1,78 @@
-require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const mongoose = require('mongoose')
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const passport = require("passport");
+require('ejs')
 
-// Models
-const User = require('./models/user_model.js')
-const Game = require('./models/game_model.js')
+// Only use .env in development mode
+if (process.env.NODE_ENV === "development") require('dotenv').config();
 
+// Init app
 const app = express();
 
-// Configs
+// App configs
 app.set('view engine', 'ejs')
+
+// Middlewares
+app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// Serve static
+// Serve static resources
 app.use(express.static(path.join(__dirname, 'public')))
 app.use('/css', express.static(path.join(__dirname, 'public/css')))
 app.use('/js', express.static(path.join(__dirname, 'public/js')))
 
+// Create session with connect mongo
+const { mongoosePromise, mongoOptions } = require('./config/database.js')
 
-/* --------------------------------- Database ------------------------------- */
-const dbUri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.DB_HOST}/${process.env.DB_NAME}?retryWrites=true&w=majority`;
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true,
+    store: MongoStore.create({
+        clientPromise: mongoosePromise.then(m => m.connection.getClient()),
+        mongoOptions: mongoOptions,
+        dbName: process.env.DB_NAME,
+        collectionName: 'sessions',
+        autoRemove: 'interval',
+        autoRemoveInterval: 1
+    }),
+    cookie: { maxAge: 1000 * 60 * 60 * 24 }
+}))
 
-mongoose.connect(dbUri, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => {
-        console.log('Connected to database');
-        app.emit("ready")
-    })
-    .catch(err => console.log('[Database error] ' + err));
+// Passport setup
+require('./config/passport.js')
 
-function addUser(username, uid) {
-    const user = new User({
-        username: username,
-        uid: uid
-    })
+app.use(passport.initialize())
+app.use(passport.session())
 
-    return user.save();
-}
+// Routes setup
+require('./routes')(app)
 
-function addGame(name, size, actionsPerDay, actionsPerInterval, tieCount,
-    allowVoteChange,
-    doActionQueue,
-    doBroadcastAction,
-    doFogOfWar,
-    doBounty,
-    doEscort) {
-    const game = new Game({
-        name: name,
-        size: size,
-        actionsPerDay: actionsPerDay,
-        actionsPerInterval: actionsPerInterval,
-        tieCount: tieCount,
-        allowVoteChange: allowVoteChange,
-        doActionQueue: doActionQueue,
-        doBroadcastAction: doBroadcastAction,
-        doFogOfWar: doFogOfWar,
-        doBounty: doBounty,
-        doEscort: doEscort
-    })
+// Error handling
+// app.use((req, res, next) => {
+//     const error = new Error("Not found");
+//     error.status = 404;
+//     next(error);
+// });
+//
+// // error handler middleware
+// app.use((error, req, res, next) => {
+//     res.status(error.status || 500).send({
+//         error: {
+//             status: error.status || 500,
+//             message: error.message || 'Internal Server Error',
+//         },
+//     });
+// });
 
-    return game.save();
-}
-
-
-// Routes
-
-app.get('/', (req, res) => {
-    res.render('index')
-})
-
-// body: email, username, password
-app.get('/login', (req, res) => {
-    res.render('login')
-})
-
-app.post('/register', (req, res) => {
-
-})
-
-app.get('/register', (req, res) => {
-    res.render('register')
-})
-
-
-app.post('/register', (req, res) => {
-
-})
-
-app.on("ready", () => {
+mongoosePromise.then(() => {
     /* App started here */
-    app.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));
+    const server = app.listen(process.env.PORT, () => {
+
+        const address = process.env.NODE_ENV === 'development' ? `http://localhost:${ process.env.PORT }` : server.address().address;
+
+        console.log(`[app] Server running on ${ address } in <${ process.env.NODE_ENV }> mode`)
+    });
 })

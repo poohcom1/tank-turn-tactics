@@ -4,10 +4,11 @@
   "scripts": {
     "start": "npm run start:dev",
     "start:dev": "cross-env NODE_ENV=development nodemon app.js",
+    "start:debug": "cross-env NODE_ENV=development nodemon --trace-warnings app.js",
     "start:prod": "NODE_ENV=production node app.js"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
+    "bcrypt": "^5.0.1",
     "connect-mongo": "^4.4.1",
     "ejs": "^3.1.6",
     "express": "^4.17.1",
