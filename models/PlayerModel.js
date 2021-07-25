@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 
 const playerSchema = new mongoose.Schema({
+    user_id: mongoose.ObjectId,
+    game_id: mongoose.ObjectId,
     name: {
         type: String,
         required: true
@@ -22,3 +24,6 @@ const playerSchema = new mongoose.Schema({
         default: 1
     }
 });
+
+const Player = mongoose.model("players", playerSchema);
+module.exports = Player;

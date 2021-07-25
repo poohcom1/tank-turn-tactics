@@ -5,6 +5,7 @@ const gameSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    password: String,
     size: {
         width: {
             type: Number,
@@ -15,15 +16,13 @@ const gameSchema = new mongoose.Schema({
             required: true
         }
     },
-    players: {
-        type: [mongoose.ObjectId],
-        default: []
-    },
 
     // Game options
     actionsPerDay: { type: Number, default: 1 },
     actionsPerInterval: { type: Number, default: 1 },
     tieCount: { type: Number, default: 2 },
+
+    allowAlwaysJoin: Boolean,
 
     allowVoteChange: Boolean,
 
