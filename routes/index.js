@@ -5,6 +5,8 @@ const User = require('../models/UserModel.js')
 
 // Routes
 router.get('/', (req, res) => {
+    console.log(req.session)
+    console.log(req.user)
     res.render('index')
 })
 
@@ -17,6 +19,9 @@ router.get('/login', (req, res) => {
     res.render('login', { message: req.message ? res.message : '' })
 })
 
+router.get('/secret', (req, res) => {
+    res.render('secret')
+})
 
 router.post('/register', (req, res, next) => {
     const { username, email, password } = req.body;

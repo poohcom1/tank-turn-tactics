@@ -31,32 +31,36 @@ const dbUri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@${pro
 const dbOptions = { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true }
 
 // Connect to database
-mongoose.connect(dbUri, dbOptions)
-    .then(mongooseConnection => {
-        // Create session with connect mongo
-        app.use(session({
-            secret: process.env.SESSION_SECRET,
-            resave: false,
-            saveUninitialized: true,
-            store: MongoStore.create({
-                client: mongooseConnection.connection.getClient()
-            }),
-            cookie: {
-                maxAge: 1000 * 60 * 60 * 24
-            }
-        }))
-
+const clientPromise = mongoose.connect(dbUri, dbOptions)
+    .then(m => {
         console.log(`[mongodb] Connected to database <${process.env.DB_NAME}>`);
         app.emit("ready");
+
+        return m.connection.getClient(); // Return the client to use with connect-mongo
     })
     .catch(err => console.log('[Database error] ' + err));
 
+// Create session with connect mongo
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true,
+    store: MongoStore.create({
+        clientPromise: clientPromise,
+        dbName: process.env.DB_NAME,
+        collectionName: 'sessions',
+        autoRemove: 'interval',
+        autoRemoveInterval: 1
+    }),
+    cookie: { maxAge: 1000 * 60 * 60 * 24 }
+}))
 
 // Passport setup
 require('./config/passport.js')
 
 app.use(passport.initialize())
 app.use(passport.session())
+
 
 // Routes
 app.use(routes)
