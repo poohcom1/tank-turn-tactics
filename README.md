@@ -9,6 +9,7 @@
 ```
 root
 ├── controllers # db controllers
+├── libs        # utility modules
 ├── models      # db schema
 ├── public      # static resources
 │   ├── css
