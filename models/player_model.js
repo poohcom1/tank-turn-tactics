@@ -16,6 +16,9 @@ const playerSchema = new mongoose.Schema({
     range: {
         type: Number,
         default: 1
+    },
+    sight: {
+        type: Number,
+        default: 1
     }
-
 });
