@@ -1,6 +1,8 @@
 # Tank Turn Tactics
 
-This project is still in very early stage of development!
+An attempt to recreate the game described in this [video](https://www.youtube.com/watch?v=aOYbR-Q_4Hs).
+
+*Note: This project is still in a very early stage of development!*
 
 
 ## Setup
