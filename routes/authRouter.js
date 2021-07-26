@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const passport = require('passport');
-const { hashPassword, validPassword } = require('../libs/passwordUtils.js');
+const { hashPassword, validPassword } = require('../libs/password_utils.js');
 const User = require('../models/UserModel.js');
 
 router.post('/register', (req, res, next) => {
@@ -24,6 +24,9 @@ router.post('/register', (req, res, next) => {
 
 router.post('/login', passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login'}))
 
-
+router.get('/logout', (req, res) => {
+    req.logout()
+    res.redirect('/')
+})
 
 module.exports = router;

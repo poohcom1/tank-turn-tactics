@@ -1,40 +1,66 @@
 const router = require('express').Router()
-const passport = require('passport')
+const { checkAuth } = require('../middlewares/authMiddleware.js')
+const Game = require('../models/GameModel.js')
 
-// Routes
+// Pages
 router.get('/', (req, res) => {
     if (req.isAuthenticated()) {
-        res.render('index', { user: req.user.username })
+        res.render('pages/index', { user: req.user.username })
     } else {
         res.redirect('/login')
     }
 })
 
 router.get('/register', (req, res) => {
-    res.render('register')
+    res.render('pages/register')
 })
 
 router.get('/login', (req, res) => {
-    res.render('login', { message: req.message ? res.message : '' })
+    res.render('pages/login', { message: req.message ? res.message : '' })
 })
 
-router.get('/logout', (req, res) => {
-    req.logout()
-    res.redirect('/')
-})
-
+// Join/create
 router.get('/create-game', (req, res) => {
     if (!req.user) {
         res.redirect('/login');
     } else {
-        res.render('create_game', { username: req.user.username } )
+        res.render('pages/create_game', { username: req.user.username } )
     }
 })
 
-router.get('/game-created/:gameId', (req, res) => {
+router.get('/game-created/:gameId', checkAuth,(req, res) => {
     const { gameId } = req.params;
 
     res.send(`<h1>Game Created!</h1><p>Id: ${gameId}</p>`)
+})
+
+router.get('/join/:gameId', checkAuth, (req, res, next) => {
+    const { gameId } = req.params;
+
+    Game.findById(gameId, (err, game) => {
+        if (err) next(err);
+
+        if (!game) throw new Error("Game not found")
+
+        res.render('pages/join_game', {
+            gameName: game.name,
+            username: req.user.username,
+            usePassphrase: game.password !== "",
+            game_id: gameId
+        })
+    })
+})
+
+// Play
+
+router.get('/play', checkAuth, async (req, res) => {
+    const gameId = req.query.game
+
+    if (!(await Game.findById(gameId)).hasStarted) {
+        res.redirect('/join/' + gameId)
+    }
+
+    res.render('pages/play_game')
 })
 
 module.exports = (app) => {

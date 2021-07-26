@@ -1,5 +1,8 @@
 # Tank Turn Tactics
 
+This project is still in very early stage of development!
+
+
 ## Setup
 1. Copy the `sample.env` file and rename it to `.env` to set up environment variables
 2. Run `npm install` to install dependencies
@@ -12,12 +15,13 @@ root
 ├── controllers # db controllers
 ├── libs        # utility modules
 ├── models      # db schema
+├── middlewares # routes middlewares
 ├── public      # static resources
 │   ├── css
 │   └── js
 ├── routes      # routes
 ├── tests       # unit tests
-├── views       # ejs and html
+└── views       # ejs and html
 ```
 
 ## Libraries
@@ -34,7 +38,8 @@ root
 
 | Testing | Description
 |------------|-------------
-| mocha | Framework
+| jest | Framework
+| @jest-mock/express | Express mocking
 | mongodb-memory-server| Database testing
 
 

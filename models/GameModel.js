@@ -35,6 +35,8 @@ const schemaObject = {
     password: String,
     creator_id: { type: mongoose.ObjectId, required: true },
 
+    hasStarted: { type: Boolean, default: false },
+
     // Game options
     actionsPerDay: { type: Number, default: 1 },
     actionsPerInterval: { type: Number, default: 1 },
