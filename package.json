@@ -5,7 +5,11 @@
     "start": "npm run start:dev",
     "start:dev": "cross-env NODE_ENV=development nodemon app.js",
     "start:debug": "cross-env NODE_ENV=development nodemon --trace-warnings app.js",
-    "start:prod": "NODE_ENV=production node app.js"
+    "start:prod": "NODE_ENV=production node app.js",
+    "test": "jest --runInBand ./test"
+  },
+  "jest": {
+    "testEnvironment": "node"
   },
   "dependencies": {
     "bcrypt": "^5.0.1",

@@ -23,7 +23,7 @@ const playerSchema = new mongoose.Schema({
         type: Number,
         default: 1
     }
-});
+}, { timestamps: true });
 
 const Player = mongoose.model("players", playerSchema);
 module.exports = Player;

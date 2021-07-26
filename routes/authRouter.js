@@ -16,7 +16,7 @@ router.post('/register', (req, res, next) => {
             })
 
             user.save()
-                .then(() => res.send("success!"))
+                .then(() => res.redirect('/'))
                 .catch(err => next(err))
         })
         .catch(err => next(err))

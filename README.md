@@ -34,7 +34,7 @@ root
 
 | Testing | Description
 |------------|-------------
-| jest | Framework
+| mocha | Framework
 | mongodb-memory-server| Database testing
 
 

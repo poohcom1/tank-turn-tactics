@@ -1,6 +1,23 @@
 const mongoose = require("mongoose");
 
-const gameSchema = new mongoose.Schema({
+/**
+ * @typedef GameSchema
+ * @property {string} name required
+ * @property {string} password required
+ * @property {Object} size
+ * @property {number} size.width
+ * @property {number} size.height
+ * @property {number} actionsPerDay
+ * @property {number} actionsPerInterval
+ * @property {number} tieCount
+ * @property {boolean} allowVoteChange
+ * @property {boolean} doActionQueue
+ * @property {boolean} doBroadcastAction
+ * @property {boolean} doFogOfWar
+ * @property {boolean} doBounty
+ * @property {boolean} doEscort
+ */
+const schemaObject = {
     name: {
         type: String,
         required: true
@@ -22,17 +39,20 @@ const gameSchema = new mongoose.Schema({
     actionsPerInterval: { type: Number, default: 1 },
     tieCount: { type: Number, default: 2 },
 
-    allowAlwaysJoin: Boolean,
+    allowAlwaysJoin: { type: Boolean, default: false },
 
-    allowVoteChange: Boolean,
+    allowVoteChange: { type: Boolean, default: true },
 
-    doActionQueue: Boolean,
-    doBroadcastAction: Boolean,
+    doActionQueue: { type: Boolean, default: true },
+    doBroadcastAction: { type: Boolean, default: true },
 
-    doFogOfWar: Boolean,
-    doBounty: Boolean,
-    doEscort: Boolean
-});
+    doFogOfWar: { type: Boolean, default: true },
+    doBounty: { type: Boolean, default: true },
+    doEscort: { type: Boolean, default: false }
+}
+
+
+const gameSchema = new mongoose.Schema(schemaObject, { timestamps: true });
 
 const Game = mongoose.model("games", gameSchema)
 module.exports = Game;
