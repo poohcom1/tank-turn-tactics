@@ -7,7 +7,7 @@ const saltRounds = 10;
  * @param password
  * @return {Promise<{salt: *, hash: *}>}
  */
-async function hashPassword(password) {
+module.exports.hashPassword = async function(password) {
     const salt = await bcrypt.genSalt(saltRounds);
     const hash = await bcrypt.hash(password, salt)
 
@@ -24,11 +24,8 @@ async function hashPassword(password) {
  * @param salt
  * @return {Promise<boolean>}
  */
-async function validPassword(password, hash, salt) {
+module.exports.validPassword = async function(password, hash, salt) {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     return hashedPassword === hash;
 }
-
-module.exports.hashPassword = hashPassword;
-module.exports.validPassword = validPassword;

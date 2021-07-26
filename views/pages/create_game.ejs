@@ -21,9 +21,8 @@
         <input id="password" name="password"/>
 
         <hr/>
-        <h2>Character Info</h2>
-        <label for="displayName">Display Name: </label>
-        <input id="displayName" name="displayName" placeholder="<%= username %>" />
+
+        <%- include('../partials/player_creation_card.ejs') %>
 
         <button type="submit">Create</button>
     </form>

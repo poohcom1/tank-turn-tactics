@@ -1,0 +1,40 @@
+<body>
+    <h1>Tank Turn Tactics</h1>
+    <div>
+        <style>
+            table, th, tr {
+                border: 1px solid black;
+            }
+        </style>
+        <h2>Welcome, <%= user %></h2>
+        <table id="gameTable"></table>
+        <script>
+            fetch('/game/getGames', { method: 'GET'})
+            .then(res => res.json())
+            .then(games => {
+                const _MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+                // a and b are javascript Date objects
+                function dateDiffInDays(a, b) {
+                    // Discard the time and time-zone information.
+                    const utc1 = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+                    const utc2 = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+
+                    return Math.floor((utc2 - utc1) / _MS_PER_DAY);
+                }
+
+                const table = document.querySelector('#gameTable');
+
+                table.innerHTML = "<tr><th>Game</th><th>Days</th><th>Players</th></tr>"
+
+                games.forEach(game => {
+                    console.log(game.createdAt)
+                    const age = dateDiffInDays(new Date(game.createdAt), new Date())
+                    table.innerHTML += `<tr><th>${game.name}</th><th>${age}</th><th>dunno</th></tr>`
+                })
+            })
+        </script>
+        <a href="/create-game">Create a game</a>
+        <a href="/auth/logout">Logout</a>
+    </div>
+</body>

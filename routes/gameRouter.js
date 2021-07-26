@@ -1,29 +1,14 @@
 const router = require('express').Router();
-const { createGame } = require('../controllers/GameController.js')
-const { createPlayer } = require('../controllers/PlayerController.js')
+const { createGame, joinGame, getGame, initGame, getUserGames } = require('../controllers/GameController.js')
 
-router.post('/create', (req, res) => {
-    if (!req.user) res.status(501).send()
+router.post('/create', createGame);
 
-    const gameCfg = req.body;
+router.post('/join', joinGame);
 
-    gameCfg.size = { width: gameCfg.size, height: gameCfg.size}
+router.get('/get/:gameId', getGame);
 
-    createGame(gameCfg)
-        .then((doc) => {
-            const game_id = doc._id;
+router.get('/getGames', getUserGames)
 
-            createPlayer(req.user.id, game_id, gameCfg.displayName ?? req.user.username)
-                .then(() => res.redirect(`/game-created/${doc._id}`))
-                .catch(err => {
-                    console.log(err)
-                    res.redirect('/create-game');
-                })
-        })
-        .catch(err => {
-            console.log(err)
-            res.redirect('/game/create')
-        });
-})
+router.get('/init/:gameId', initGame);
 
 module.exports = router;

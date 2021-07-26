@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "scripts": {
     "start": "npm run start:dev",
-    "start:dev": "cross-env NODE_ENV=development nodemon app.js",
-    "start:debug": "cross-env NODE_ENV=development nodemon --trace-warnings app.js",
-    "start:prod": "NODE_ENV=production node app.js"
+    "start:dev": "cross-env NODE_ENV=development nodemon  app.js",
+    "start:debug": "cross-env NODE_ENV=development nodemon --trace-warnings --no-deprecation app.js",
+    "start:prod": "NODE_ENV=production node app.js",
+    "test": "jest --runInBand ./test"
+  },
+  "jest": {
+    "testEnvironment": "node"
   },
   "dependencies": {
     "bcrypt": "^5.0.1",
@@ -18,6 +22,7 @@
     "passport-local": "^1.0.0"
   },
   "devDependencies": {
+    "@jest-mock/express": "^1.4.2",
     "cross-env": "^7.0.3",
     "dotenv": "^10.0.0",
     "jest": "^27.0.6",
