@@ -22,7 +22,6 @@ const schemaObject = {
         type: String,
         required: true
     },
-    password: String,
     size: {
         width: {
             type: Number,
@@ -33,6 +32,8 @@ const schemaObject = {
             required: true
         }
     },
+    password: String,
+    creator_id: { type: mongoose.ObjectId, required: true },
 
     // Game options
     actionsPerDay: { type: Number, default: 1 },
