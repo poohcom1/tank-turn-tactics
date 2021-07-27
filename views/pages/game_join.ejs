@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create game</title>
+</head>
+<body>
+    <h1>Join a game</h1>
+
+    <form action="/game/join" method="POST">
+        <label for="gameId">Game code:</label>
+
+        <input id="gameId" value="<%= game_id %>" name="gameId"/>
+
+        <%if (usePassphrase) { %>
+            <label for="passphrase">Passphrase</label>
+            <input id="passphrase" name="passphrase"/>
+        <% } %>
+
+        <%- include('../partials/player_creation_card.ejs') %>
+
+        <button type="submit">Join</button>
+    </form>
+
+</body>
+</html>
