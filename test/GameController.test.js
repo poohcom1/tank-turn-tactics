@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 const { getMockReq, getMockRes } = require('@jest-mock/express')
 const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
-const { createGame, initGame } = require('../controllers/GameController.js')
+const { createGame, startGame, deleteGame } = require('../controllers/GameController.js')
 
 DBHandler.setup();
 
@@ -87,7 +87,7 @@ describe("GameController", () => {
         })
     })
 
-    describe("initGame",   () => {
+    describe("startGame",   () => {
         let req, res;
 
         beforeEach(async () => {
@@ -116,7 +116,7 @@ describe("GameController", () => {
         })
 
         it("should initialize all players' position", async () => {
-            await initGame(req, res);
+            await startGame(req, res);
 
             const fetchedPlayers = await Player.find({})
 
@@ -126,7 +126,7 @@ describe("GameController", () => {
         })
 
         it("should initialize unique positions", async () => {
-            await initGame(req, res);
+            await startGame(req, res);
 
             const fetchedPlayers = await Player.find({})
 
@@ -134,6 +134,32 @@ describe("GameController", () => {
             const positions = fetchedPlayers.map(player => JSON.stringify(player.position))
 
             expect(new Set(positions).size).toBe(positions.length)
+        })
+    })
+
+    describe("deleteGame", () => {
+        it("should delete all the games players", async() => {
+            const game = await new Game(testGameData).save();
+            const gameId = game._id
+
+            for (let  i = 0; i < 10; i++) {
+                await new Player({ name: "lol", user_id: mongoose.Types.ObjectId(), game_id: gameId}).save()
+            }
+
+            const req = {
+                params: {
+                    gameId: gameId
+                }
+            }
+
+            const { res } = getMockRes()
+
+            await deleteGame(req, res);
+
+            const games = await Game.findById(gameId)
+            const players = await Player.find({ game_id: gameId })
+
+            expect(players.length).toBe(0)
         })
     })
 })

@@ -6,14 +6,16 @@ const User = require('../models/UserModel.js')
  * @param username
  * @param hash
  * @param salt
+ * @param admin
  * @return {Promise<Document<any, any, unknown>>}
  */
-module.exports.createUser = function (email, username, hash, salt) {
+module.exports.createUser = function (email, username, hash, salt, admin=false) {
     const user = new User({
         email,
         username,
         hash,
-        salt
+        salt,
+        admin
     })
 
     return user.save();

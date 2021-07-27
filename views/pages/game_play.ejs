@@ -12,7 +12,7 @@
             const gameId = urlParams.get('game')
 
             // Get data
-            const gameRes = await fetch(`/game/get/${gameId}`);
+            const gameRes = await fetch(`/game/${gameId}`);
             const gameResponse = await gameRes.json();
 
             const gameObject = gameResponse.game;

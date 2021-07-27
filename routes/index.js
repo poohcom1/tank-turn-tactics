@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const { checkAuth } = require('../middlewares/authMiddleware.js')
+const { isLoggedIn, isAdmin } = require('../middlewares/authMiddleware.js')
 const Game = require('../models/GameModel.js')
 
 // Pages
@@ -20,22 +20,18 @@ router.get('/login', (req, res) => {
 })
 
 // Join/create
-router.get('/create-game', (req, res) => {
-    if (!req.user) {
-        res.redirect('/login');
-    } else {
-        res.render('pages/game_create', { username: req.user.username } )
-    }
+router.get('/create-game', isLoggedIn, (req, res) => {
+    res.render('pages/game_create', { username: req.user.username } )
 })
 
-router.get('/game-created/:gameId', checkAuth,(req, res) => {
+router.get('/game-created/:gameId', isLoggedIn,(req, res) => {
     const { gameId } = req.params;
 
     res.send(`<h1>Game Created!</h1><p>Id: ${gameId}</p>`)
 })
 
 
-router.get('/join/:gameId?', checkAuth, (req, res, next) => {
+router.get('/join/:gameId?', isLoggedIn, (req, res, next) => {
     const { gameId } = req.params;
 
     // Game.findById(gameId, (err, game) => {
@@ -55,15 +51,16 @@ router.get('/join/:gameId?', checkAuth, (req, res, next) => {
 })
 
 // Play
-
-router.get('/play', checkAuth, async (req, res) => {
+router.get('/play', isLoggedIn, async (req, res) => {
     const gameId = req.query.game
-    //
-    // if (!(await Game.findById(gameId)).hasStarted) {
-    //     res.redirect('/join/' + gameId)
-    // }
 
-    res.render('pages/game_play')
+    const game = await Game.findById(gameId)
+
+    if (game.hasStarted) {
+        res.render('pages/game_play')
+    } else {
+        res.render('pages/game_lobby', { isCreator: game.creator_id.equals(req.user.id) })
+    }
 })
 
 module.exports = (app) => {

@@ -1,0 +1,17 @@
+<h1>Waiting for game to start</h1>
+
+<div>
+    <%if (isCreator) { %>
+        <button id="startGame">Start!</button>
+        <script>
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameId = urlParams.get('game')
+
+            const startButton = document.querySelector("#startGame");
+
+            startButton.addEventListener("click", () => {
+                fetch(`/game/${gameId}/start`, { method: 'PUT' })
+            })
+        </script>
+    <% } %>
+</div>

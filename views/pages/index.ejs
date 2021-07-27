@@ -17,7 +17,7 @@
         <table id="gameTable"></table>
         <script>
             // Generate games table
-            fetch('/game/getGames', { method: 'GET'})
+            fetch('/game', { method: 'GET'})
             .then(res => res.json())
             .then(games => {
                 const _MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -33,11 +33,16 @@
 
                 const table = document.querySelector('#gameTable');
 
-                table.innerHTML = "<tr><th>Game</th><th>Days</th><th>Players</th></tr>"
+                table.innerHTML = "<tr><th>Game</th><th>Days</th><th>Players</th><th>State</th></tr>"
 
                 games.forEach(game => {
                     const age = dateDiffInDays(new Date(game.createdAt), new Date())
-                    table.innerHTML += `<tr><th>${game.name}</th><th>${age}</th><th>${game.players.length}</th></tr>`
+                    table.innerHTML += `<tr>
+                        <th><a href="/play?game=${game._id}">${game.name}</a></th>
+                        <th>${age}</th>
+                        <th>${game.players.length}</th>
+                        <th>${game.hasStarted ? 'In' : 'Lobby'}</th>
+                    </tr>`
                 })
             })
         </script>

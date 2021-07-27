@@ -1,19 +1,19 @@
 const router = require('express').Router();
-const { createGame, joinGame, getGame, initGame, getUserGames } = require('../controllers/GameController.js')
+const { createGame, joinGame, getGame, startGame, getUserGames, getPlayers, deleteGame } = require('../controllers/GameController.js')
+const { isAdmin } = require("../middlewares/authMiddleware.js");
 
-// Form routes
-router.post('/create', createGame);
+router.post('/', createGame);
 
-router.post('/join', joinGame);
+router.get('/', getUserGames)
 
-// Get routes with params
-router.get('/get/:gameId', getGame);
+router.post('/player', joinGame);
 
-router.get('/init/:gameId', initGame);
+router.put('/:gameId/start', startGame);
 
-// Get routes
-router.get('/getGames', getUserGames)
+router.get('/:gameId/players', getPlayers)
 
+router.get('/:gameId', getGame);
 
+router.get('/:gameDelete', isAdmin, deleteGame)
 
 module.exports = router;

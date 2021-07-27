@@ -18,4 +18,3 @@ module.exports.assignLocation = function assignLocation(count, size) {
     // Reconvert set to array and parse json
     return Array.from(coords).map(strObjects => JSON.parse(strObjects));
 }
-

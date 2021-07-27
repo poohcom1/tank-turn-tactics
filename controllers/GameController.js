@@ -41,7 +41,7 @@ module.exports.createGame = async (req, res) => {
                 .then(() => res.redirect('/create-game'));
         }
 
-        res.redirect('/game/create')
+        res.redirect('/create-game')
     }
 }
 
@@ -101,7 +101,7 @@ module.exports.getGame = function (req, res) {
  * @param {number} req.params.gameId Game ID
  * @param res
  */
-module.exports.initGame = async function (req, res) {
+module.exports.startGame = async function (req, res) {
     const gameId = req.params.gameId
 
     // Fetch game and its players
@@ -114,6 +114,21 @@ module.exports.initGame = async function (req, res) {
         player.position = locations[i];
         return player.save();
     }))
+
+    await Game.findByIdAndUpdate(gameId, {
+        hasStarted: true,
+        actionsPerDay: 2
+    })
+
+    res.redirect("/play?game=" + gameId)
+}
+
+module.exports.getPlayers = async function (req, res) {
+    const gameId = req.params.gameId
+
+    const players = await Player.find({ game_id: gameId }).lean()
+
+    res.send(players)
 }
 
 // GET routes
@@ -137,4 +152,10 @@ module.exports.getUserGames = async function (req, res) {
     players.forEach(player => gameList.filter(game => game._id.toString() === player.game_id.toString())[0].players.push(player))
 
     res.json(gameList);
+}
+
+module.exports.deleteGame = async function (req, res) {
+    const gameId = req.params.gameId;
+    await Player.deleteMany({ game_id: gameId})
+    await Game.findByIdAndDelete(gameId)
 }

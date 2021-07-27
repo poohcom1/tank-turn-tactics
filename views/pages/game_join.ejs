@@ -7,9 +7,8 @@
 <body>
     <h1>Join a game</h1>
 
-    <form action="/game/join" method="POST">
+    <form action="/game/player" method="POST">
         <label for="gameId">Game code:</label>
-
         <input id="gameId" value="<%= game_id %>" name="gameId"/>
 
         <%if (usePassphrase) { %>

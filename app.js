@@ -18,6 +18,7 @@ app.set('view engine', 'ejs')
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
+
 // Serve static resources
 app.use(express.static(path.join(__dirname, 'public')))
 app.use('/css', express.static(path.join(__dirname, 'public/css')))
@@ -73,3 +74,4 @@ app.on('ready', () => {
         console.log(`\x1b[36m[app] Server running on ${ address } in \x1b[1m${ process.env.NODE_ENV }\x1b[0m \x1b[36mmode\x1b[0m`)
     });
 })
+
