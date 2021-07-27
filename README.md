@@ -6,7 +6,7 @@ This project is still in very early stage of development!
 ## Setup
 1. Copy the `sample.env` file and rename it to `.env` to set up environment variables
 2. Run `npm install` to install dependencies
-3. Run `npm run start` to start server
+3. Run `npm run start` to start server or `npm run start:debug` to allow stack trace
 
 ## Project Structure
 ```
@@ -31,10 +31,10 @@ root
 | express | Framework 
 | ejs | Templating engine
 | passport | Authentication middleware
-| passport-local | Using local authentication
 | bcryptjs | Password encryption
 | mongoose | Database controller
 | express-session | Authenticated session
+| connect-mongodb-session | MongoDB session storage
 
 | Testing | Description
 |------------|-------------
@@ -45,5 +45,31 @@ root
 
 ## Game Design
 
+### Design Philosophy
+
+ - All mechanics should be a tool to build either trust or distrust
+ - Dead players should continue to have a role in the game
+
 ### Design Points
 
+#### Default
+
+ - Game is played asynchronously on a grid
+ - Each player controls a tank with health. If the health reaches zero, they lose
+ - Each have actions point which they gain at a certain time every day
+ - Actions point can be spent in 3 ways: combat, movement, or upgrades
+    - Combat: Attack another player
+    - Movement: Move to a different position
+    - Upgrade: Upgrade the range of the tank
+ - Dead players can vote on an alive player to award an action point to
+    
+#### Extended Designs
+
+ - **Action Queue**: Actions are performed all at once at the end of the day
+ - **Fog of war**: Sight is included as a stat alongside range. Player can only see up to their sight stat, even if their 
+   range is greater
+ - **Spying**: Actions are not known until they are executed at the end of the day. However, actions will be broadcasted to 
+   anyone online at the moment, to add the possibility of 'spying' on other players
+ - **Loot**: Players are awarded half the action points of anyone they killed
+ - **Bounty**: Each day, players are assigned a bounty of another player at random. If they kill said player, they will 
+    received all of the action points of that player

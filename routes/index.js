@@ -24,7 +24,7 @@ router.get('/create-game', (req, res) => {
     if (!req.user) {
         res.redirect('/login');
     } else {
-        res.render('pages/create_game', { username: req.user.username } )
+        res.render('pages/game_create', { username: req.user.username } )
     }
 })
 
@@ -34,20 +34,23 @@ router.get('/game-created/:gameId', checkAuth,(req, res) => {
     res.send(`<h1>Game Created!</h1><p>Id: ${gameId}</p>`)
 })
 
-router.get('/join/:gameId', checkAuth, (req, res, next) => {
+
+router.get('/join/:gameId?', checkAuth, (req, res, next) => {
     const { gameId } = req.params;
 
-    Game.findById(gameId, (err, game) => {
-        if (err) next(err);
+    // Game.findById(gameId, (err, game) => {
+    //     if (err) next(err);
+    //
+    //     if (!game) throw new Error("Game not found")
+    //
+    //
+    // })
 
-        if (!game) throw new Error("Game not found")
-
-        res.render('pages/join_game', {
-            gameName: game.name,
-            username: req.user.username,
-            usePassphrase: game.password !== "",
-            game_id: gameId
-        })
+    res.render('pages/game_join', {
+        gameName: "",
+        username: req.user.username,
+        usePassphrase: "",
+        game_id: gameId ?? ''
     })
 })
 
@@ -55,12 +58,12 @@ router.get('/join/:gameId', checkAuth, (req, res, next) => {
 
 router.get('/play', checkAuth, async (req, res) => {
     const gameId = req.query.game
+    //
+    // if (!(await Game.findById(gameId)).hasStarted) {
+    //     res.redirect('/join/' + gameId)
+    // }
 
-    if (!(await Game.findById(gameId)).hasStarted) {
-        res.redirect('/join/' + gameId)
-    }
-
-    res.render('pages/play_game')
+    res.render('pages/game_play')
 })
 
 module.exports = (app) => {

@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
-const MongoStore = require('connect-mongo');
+const MongoDBStore = require('connect-mongodb-session')(session);
 const passport = require("passport");
 require('ejs')
 
@@ -24,19 +24,15 @@ app.use('/css', express.static(path.join(__dirname, 'public/css')))
 app.use('/js', express.static(path.join(__dirname, 'public/js')))
 
 // Create session with connect mongo
-const { mongoosePromise, mongoOptions } = require('./config/database.js')
+const { dbUri, dbOptions } = require('./config/database.js')(app)
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
-    store: MongoStore.create({
-        clientPromise: mongoosePromise.then(m => m.connection.getClient()),
-        mongoOptions: mongoOptions,
-        dbName: process.env.DB_NAME,
-        collectionName: 'sessions',
-        autoRemove: 'interval',
-        autoRemoveInterval: 1
+    store: new MongoDBStore({
+        uri: dbUri,
+        collection: 'sessions'
     }),
     cookie: { maxAge: 1000 * 60 * 60 * 24 }
 }))
@@ -67,12 +63,13 @@ require('./routes')(app)
 //     });
 // });
 
-mongoosePromise.then(() => {
+
+app.on('ready', () => {
     /* App started here */
     const server = app.listen(process.env.PORT, () => {
 
         const address = process.env.NODE_ENV === 'development' ? `http://localhost:${ process.env.PORT }` : server.address().address;
 
-        console.log(`[app] Server running on ${ address } in <${ process.env.NODE_ENV }> mode`)
+        console.log(`\x1b[36m[app] Server running on ${ address } in \x1b[1m${ process.env.NODE_ENV }\x1b[0m \x1b[36mmode\x1b[0m`)
     });
 })

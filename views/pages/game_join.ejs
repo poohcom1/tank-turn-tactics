@@ -5,10 +5,12 @@
     <title>Create game</title>
 </head>
 <body>
-    <h1><%= gameName %></h1>
+    <h1>Join a game</h1>
 
     <form action="/game/join" method="POST">
-        <input hidden name="game_id" value="<%= game_id %>"/>
+        <label for="gameId">Game code:</label>
+
+        <input id="gameId" value="<%= game_id %>" name="gameId"/>
 
         <%if (usePassphrase) { %>
             <label for="passphrase">Passphrase</label>

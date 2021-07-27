@@ -26,6 +26,7 @@ describe("GameController", () => {
             size: 10 // todo: change if size format from POST is changed
         }
 
+        // Request and response mock
         const req = {
             user: {
                 id: userId,
@@ -37,34 +38,59 @@ describe("GameController", () => {
             }
         }
 
-        beforeEach(async () => {
-            const { res } = getMockRes()
+        const { res } = getMockRes()
 
-            await createGame(req, res)
+        // Mocks
+        let playerSpy; // Use for mocking if Player.save() throws an error
+
+        afterEach(() => {
+            if (playerSpy) playerSpy.mockRestore();
         })
 
         it("should create a game with the correct name", async () => {
+            await createGame(req, res)
+
             const fetchedGameDoc = (await Game.find({}))[0];
 
             expect(fetchedGameDoc.name).toStrictEqual(gamePostObject.name)
         })
 
-        it("Should create a player with the right game_id with createGame", async () => {
+        it("Should create a player with the right game_id", async () => {
+            await createGame(req, res)
+
             const fetchedPlayerDoc = (await Player.find({}))[0];
             const fetchedGameDoc = (await Game.find({}))[0];
 
             expect(fetchedPlayerDoc.game_id).toStrictEqual(fetchedGameDoc._id)
         })
 
-        it("Should create a player with the right user_id with createGame", async () => {
+        it("Should create a player with the right user_id", async () => {
+            await createGame(req, res)
+
             const fetchedPlayerDoc = (await Player.find({}))[0];
 
             expect(fetchedPlayerDoc.user_id).toStrictEqual(userId)
         })
+
+        it("Should delete the game if the player is failed to be created", async () => {
+            // Make the db save fail
+            playerSpy = jest.spyOn(Player.prototype, 'save').mockImplementation(async () => {
+                throw new Error()
+            });
+
+            await createGame(req, res)
+
+            const fetchedGameDocs = await Game.find({});
+
+            // Should find 0 games because it was deleted
+            expect(fetchedGameDocs.length).toBe(0)
+        })
     })
 
-    describe("initGame",  () => {
-        it("should update all players' position", async () => {
+    describe("initGame",   () => {
+        let req, res;
+
+        beforeEach(async () => {
             const game = await new Game(testGameData).save()
 
             const playerSavePromises = [];
@@ -78,14 +104,18 @@ describe("GameController", () => {
 
             await Promise.all(playerSavePromises)
 
-            const req = {
+            req = {
                 params: {
                     gameId: game._id
                 }
             }
 
-            const { res } = getMockRes();
+            const { resMock } = getMockRes();
 
+            res = resMock;
+        })
+
+        it("should initialize all players' position", async () => {
             await initGame(req, res);
 
             const fetchedPlayers = await Player.find({})
@@ -93,6 +123,17 @@ describe("GameController", () => {
             fetchedPlayers.forEach(player => {
                 expect(player.position.x !== undefined && player.position.y !== undefined ).toBeTruthy()
             })
+        })
+
+        it("should initialize unique positions", async () => {
+            await initGame(req, res);
+
+            const fetchedPlayers = await Player.find({})
+
+            // Using stringify to make Set work with objects
+            const positions = fetchedPlayers.map(player => JSON.stringify(player.position))
+
+            expect(new Set(positions).size).toBe(positions.length)
         })
     })
 })
