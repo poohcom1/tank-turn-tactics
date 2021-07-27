@@ -40,6 +40,24 @@ class Driver {
         this.redraw();
     };
 
+    activeOnMouseEvent = function (){
+        console.log("Mouse Event");
+        components.forEach((component) => {
+            component.onMouseEvent();
+        })
+
+        this.redraw();
+    };
+
+    activeOnKeyEvent = function (){
+        console.log("Key Event");
+        components.forEach((component) => {
+            component.onKeyEvent();
+        })
+
+        this.redraw();
+    };
+
     redraw = function (){
         console.log("redrawing");
         components.forEach((component) => {
