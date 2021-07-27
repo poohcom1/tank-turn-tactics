@@ -22,7 +22,7 @@ class Driver {
         return Promise.all(promises);
     };
 
-    passiveOnMouseEvent = function (){
+    onMouseEvent = function (){
         console.log("Mouse Event");
         components.forEach((component) => {
             component.onMouseEvent();
@@ -31,25 +31,7 @@ class Driver {
         this.redraw();
     };
 
-    passiveOnKeyEvent = function (){
-        console.log("Key Event");
-        components.forEach((component) => {
-            component.onKeyEvent();
-        })
-
-        this.redraw();
-    };
-
-    activeOnMouseEvent = function (){
-        console.log("Mouse Event");
-        components.forEach((component) => {
-            component.onMouseEvent();
-        })
-
-        this.redraw();
-    };
-
-    activeOnKeyEvent = function (){
+    onKeyEvent = function (){
         console.log("Key Event");
         components.forEach((component) => {
             component.onKeyEvent();
@@ -65,8 +47,10 @@ class Driver {
         })
     };
 
-    activeRedraw = function (){
-        //game loop...
+    update = function (){
+        components.forEach((component) => {
+            component.update();
+        })
     }
 };
 
