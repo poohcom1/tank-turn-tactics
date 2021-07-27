@@ -9,9 +9,10 @@ describe("game_utils", () => {
                 height: 200
             }
 
-            const locations = assignLocation(count, size);
+            // Using stringify to make Set work with objects
+            const locations = assignLocation(count, size).map(location => JSON.stringify(location));
 
-            expect(Array.isArray(locations) && new Set(locations).size === locations.length).toBeTruthy()
+            expect(new Set(locations).size).toBe(locations.length)
         })
 
         it("should assign coordinates within the given bounds", () => {

@@ -1,3 +1,10 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="css/index.css">
+    <title>Tank Turn Tactics</title>
+</head>
 <body>
     <h1>Tank Turn Tactics</h1>
     <div>
@@ -9,6 +16,7 @@
         <h2>Welcome, <%= user %></h2>
         <table id="gameTable"></table>
         <script>
+            // Generate games table
             fetch('/game/getGames', { method: 'GET'})
             .then(res => res.json())
             .then(games => {
@@ -28,12 +36,12 @@
                 table.innerHTML = "<tr><th>Game</th><th>Days</th><th>Players</th></tr>"
 
                 games.forEach(game => {
-                    console.log(game.createdAt)
                     const age = dateDiffInDays(new Date(game.createdAt), new Date())
-                    table.innerHTML += `<tr><th>${game.name}</th><th>${age}</th><th>dunno</th></tr>`
+                    table.innerHTML += `<tr><th>${game.name}</th><th>${age}</th><th>${game.players.length}</th></tr>`
                 })
             })
         </script>
+        <a href="/join">Join a game</a>
         <a href="/create-game">Create a game</a>
         <a href="/auth/logout">Logout</a>
     </div>

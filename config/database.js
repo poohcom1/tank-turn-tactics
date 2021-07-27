@@ -13,13 +13,30 @@ const dbOptions = {
     }
 }
 
-// Connect to database
-const mongoosePromise = mongoose.connect(dbUri, dbOptions)
-    .then(m => {
-        console.log(`[mongodb] Connected to database <${process.env.DB_NAME}>`);
+/**
+ * Connects to the mongoose database, and emits ready when connect. Retries if failed
+ * @param app
+ * @param {number} timeout Timeout in ms
+ */
+function connectToDB(app, timeout) {
+    mongoose.connect(dbUri, dbOptions)
+        .then(m => {
+            console.log(`\x1b[36m[mongodb] Connected to database \x1b[1m${process.env.DB_NAME}\x1b[0m`);
 
-        return m; // Return the client to use with connect-mongo
-    })
-    .catch(err => console.log('[Database error] ' + err));
+            app.emit('ready')
+        })
+        .catch(err => {
+            console.error('\x1b[31m[mongodb] ' + err + ', retrying in ' + timeout/1000 + ' seconds\x1b[0m')
+            setTimeout(() => connectToDB(app, timeout), timeout)
+        });
+}
 
-module.exports = { mongoosePromise, mongoOptions: dbOptions };
+/**
+ * @param app
+ * @return {{dbUri: string, dbOptions: {useUnifiedTopology: boolean, useFindAndModify: boolean, writeConcern: {j: boolean}, useCreateIndex: boolean, useNewUrlParser: boolean}}}
+ */
+module.exports = function (app) {
+    connectToDB(app, 5000)
+
+    return { dbUri, dbOptions }
+};
