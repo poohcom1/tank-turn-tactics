@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { createGame, joinGame, getGame, startGame, getUserGames, getPlayer, getPlayers, deleteGame, getAllGames } = require('../controllers/GameController.js')
-const { isAdmin } = require("../middlewares/authMiddleware.js");
+const { isAdmin } = require("../middlewares/auth_middleware.js");
 
 // Admin
 

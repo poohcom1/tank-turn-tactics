@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const { isLoggedIn, isAdmin } = require('../middlewares/authMiddleware.js')
+const { isLoggedIn, isAdmin } = require('../middlewares/auth_middleware.js')
 const Game = require('../models/GameModel.js')
 
 // Pages

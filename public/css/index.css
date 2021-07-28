@@ -1,5 +1,7 @@
-
-
 a {
     display: block;
+}
+
+table, tr, th, td {
+    border: black solid 1px;
 }

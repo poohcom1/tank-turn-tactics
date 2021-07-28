@@ -14,6 +14,14 @@ function dateDiffInDays(a, b) {
     }
 }
 
+function formatDate(d) {
+    try {
+        return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    } catch (e) {
+        return d
+    }
+}
+
 function generateGamesTable(tableQuery) {
     // Generate games table
     fetch('/game', { method: 'GET'})
@@ -30,12 +38,11 @@ function generateGamesTable(tableQuery) {
                 gameLink.href = "/play?game=" + game._id
                 gameLink.innerHTML = game.name;
 
-                const row = [
+                return [
                     gameLink,
                     game.players.length,
                     game.hasStarted ? 'Day ' + dateDiffInDays(new Date(), new Date(game.startedAt)) : 'Lobby'
-                ]
-                return row;
+                ];
             });
 
             createTable(table, tableHeaders, tableRows)
@@ -49,7 +56,7 @@ function generateAdminTable(tableQuery) {
         .then(games => {
             let table = document.querySelector(tableQuery);
 
-            const tableHeaders = ['Game', 'Players', 'State', 'Creator ID']
+            const tableHeaders = ['Game', 'Players', 'State', 'Creator ID', 'Created', 'Updated', 'Remove']
 
             const tableRows = games.map(game => {
                 const gameLink = document.createElement("a");
@@ -60,7 +67,9 @@ function generateAdminTable(tableQuery) {
                     gameLink,
                     game.players ? game.players.length : "?",
                     game.hasStarted ? 'Day ' + dateDiffInDays(new Date(), new Date(game.startedAt)) : 'Lobby',
-                    game.creator_id
+                    game.creator_id,
+                    formatDate(new Date(game.createdAt)),
+                    formatDate(new Date(game.updatedAt)),
                 ]
 
                 const deleteButton = document.createElement("button")
@@ -74,7 +83,6 @@ function generateAdminTable(tableQuery) {
                 }
 
                 row.push(deleteButton)
-
 
                 return row;
             });
@@ -103,10 +111,10 @@ function createTable(container, headers, rows) {
 
         for (let j = 0; j < headers.length; j++) {
             const tableElement = document.createElement("td");
-            if (typeof rows[i][j] === "string" || typeof  rows[i][j] === "number") {
-                tableElement.innerHTML = rows[i][j]
-            } else {
+            if (rows[i][j] instanceof HTMLElement) {
                 tableElement.appendChild(rows[i][j])
+            } else {
+                tableElement.innerHTML = rows[i][j]
             }
 
             tableRow.appendChild(tableElement)
