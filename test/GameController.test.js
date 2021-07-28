@@ -4,7 +4,6 @@ const { getMockReq, getMockRes } = require('@jest-mock/express')
 const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
 const { createGame, startGame, deleteGame, getUserGames, getAllGames } = require('../controllers/GameController.js')
-const { getUser } = require("../controllers/UserController.js");
 
 DBHandler.setup();
 

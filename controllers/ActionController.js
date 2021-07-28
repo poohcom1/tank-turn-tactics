@@ -44,11 +44,8 @@ module.exports.attack = async (req, res) => {
     }
 
     try {
-        targetPlayer.health -= 1;
-
-        if (targetPlayer.health <= 0) {
-            await targetPlayer.deleteOne();
-        } else {
+        if (targetPlayer.health > 0) {
+            targetPlayer.health -= 1;
             await targetPlayer.updateOne(targetPlayer);
         }
 

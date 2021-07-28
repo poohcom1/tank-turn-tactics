@@ -13,7 +13,7 @@ module.exports.checkPlayer = async function (req, res, next) {
 
     const player = await Player.findOne({ game_id: gameId, user_id: req.user.id })
 
-    if (player) {
+    if (player && player.actions > 0) {
         req.player = player;
         next();
     } else {

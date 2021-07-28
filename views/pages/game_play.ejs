@@ -88,12 +88,10 @@
                 }
             }
 
-
             function boxInit(box, player, x, y) {
-                if (player && player.user_id === playerId) {
+                if (player && player.user_id === playerId && player.health > 0) {
                     colorCanvas(box, "#239337")
-                }
-                else if (player) {
+                } else if (player && player.health > 0) {
                     colorCanvas(box, "rgba(168,29,29,0.62)")
                     box.addEventListener("click", () => {
                         let formData = new FormData();
