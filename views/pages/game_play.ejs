@@ -71,6 +71,22 @@
             function boxInit(box, players,x, y) {
                 const boxPlayers = players.find(player => player.position.x === x && player.position.y === y)
 
+                box.addEventListener("click", () => {
+                    let formData = new FormData();
+                    formData.append('x', x)
+                    formData.append('y', y)
+
+                    fetch(`/action/${gameId}/move`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({x: x, y: y})
+                    } )
+                        .then(res => location.reload())
+                        .catch(e => console.log(e))
+                })
 
                 if (boxPlayers && boxPlayers.user_id === userPlayer.user_id) colorCanvas(box, "#2d2f9e")
                 else if (boxPlayers) colorCanvas(box, "#a81d1d")

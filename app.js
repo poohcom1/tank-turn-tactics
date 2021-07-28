@@ -14,10 +14,9 @@ const app = express();
 // App configs
 app.set('view engine', 'ejs')
 
-// Middlewares
-app.use(express.json())
+// Post encoding
 app.use(express.urlencoded({ extended: true }))
-
+app.use(express.json())
 
 // Serve static resources
 app.use(express.static(path.join(__dirname, 'public')))

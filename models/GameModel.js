@@ -1,23 +1,7 @@
 const mongoose = require("mongoose");
 
-/**
- * @typedef GameSchema
- * @property {string} name required
- * @property {string} password required
- * @property {Object} size
- * @property {number} size.width
- * @property {number} size.height
- * @property {number} actionsPerDay
- * @property {number} actionsPerInterval
- * @property {number} tieCount
- * @property {boolean} allowVoteChange
- * @property {boolean} doActionQueue
- * @property {boolean} doBroadcastAction
- * @property {boolean} doFogOfWar
- * @property {boolean} doBounty
- * @property {boolean} doEscort
- */
-const schemaObject = {
+const gameSchema = new mongoose.Schema({
+    // Properties
     name: {
         type: String,
         required: true
@@ -33,8 +17,9 @@ const schemaObject = {
         }
     },
     password: String,
-    creator_id: { type: mongoose.Types.ObjectId, required: true },
+    creator_id: { type: mongoose.Types.ObjectId, required: true, ref: "User" },
 
+    // Fields
     hasStarted: { type: Boolean, default: false },
     startedAt: { type: Date },
 
@@ -47,16 +32,15 @@ const schemaObject = {
 
     allowVoteChange: { type: Boolean, default: true },
 
-    doActionQueue: { type: Boolean, default: true },
+    doActionQueue: { type: Boolean, default: false },
     doBroadcastAction: { type: Boolean, default: true },
 
     doFogOfWar: { type: Boolean, default: true },
     doBounty: { type: Boolean, default: true },
     doEscort: { type: Boolean, default: false }
-}
+}, { timestamps: true });
 
-
-const gameSchema = new mongoose.Schema(schemaObject, { timestamps: true });
 
 const Game = mongoose.model("games", gameSchema)
+
 module.exports = Game;
