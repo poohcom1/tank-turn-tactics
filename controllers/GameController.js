@@ -56,6 +56,10 @@ module.exports.joinGame = async function (req, res) {
 
     const responseJson = req.body;
 
+    if ((await Game.findById(responseJson.gameId)).hasStarted) {
+        res.status(500).redirect('/join')
+    }
+
     try {
         await new Player({
             name: responseJson.displayName !== '' ? responseJson.displayName : req.user.username,

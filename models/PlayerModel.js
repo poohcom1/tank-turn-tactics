@@ -22,6 +22,10 @@ const playerSchema = new mongoose.Schema({
     sight: {
         type: Number,
         default: 1
+    },
+    health: {
+        type: Number,
+        default: 3
     }
 }, { timestamps: true });
 

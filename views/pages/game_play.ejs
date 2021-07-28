@@ -6,26 +6,48 @@
 </head>
 <body>
 <h1>Game</h1>
+    <div id="gameGrid"></div>
     <script>
         (async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const gameId = urlParams.get('game')
+            let playerId = 0;
+            let gameId
 
-            // Get data
-            const gameRes = await fetch(`/game/${gameId}`, { method: 'GET' });
-            const gameResponse = await gameRes.json();
+            const draw = async () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                gameId = urlParams.get('game')
 
-            const userPlayer = await (await fetch(`/game/${gameId}/player`, { method: 'GET' })).json()
+                // Get data
+                const gameRes = await fetch(`/game/${gameId}`, { method: 'GET' });
+                const gameResponse = await gameRes.json();
 
-            const gameObject = gameResponse.game;
-            const players = gameResponse.players;
+                const userPlayer = await (await fetch(`/game/${gameId}/player`, { method: 'GET' })).json()
+                playerId = userPlayer.user_id
 
-            const size = gameObject.size;
+                const gameObject = gameResponse.game;
+                const players = gameResponse.players;
 
-            const grid = [];
+                const size = gameObject.size;
 
+                const grid = [];
 
-            createGrid(document.body, size.width, size.height, 50, 50, grid, players);
+                for (let x = 0; x < size.width; x++) {
+                    grid.push([])
+
+                    for (let y = 0; y < size.height; y++) {
+                        const playerAtPosition = players.find(player => player.position.x === x && player.position.y === y)
+
+                        if (playerAtPosition) {
+                            grid[x].push(playerAtPosition)
+                        } else {
+                            grid[x].push(false)
+                        }
+                    }
+                }
+
+                drawGrid(document.querySelector("#gameGrid"), size.width, size.height, 50, 50, grid);
+            }
+
+            await draw();
 
             /**
              *
@@ -36,8 +58,11 @@
              * @param {number} ySize
              * @param {Array} gridArray
              */
-            function createGrid(element, width, height, xSize, ySize, gridArray, playerList) {
-                let gridElement = element.appendChild(document.createElement("div"));
+            function drawGrid(element, width, height, xSize, ySize, gridArray) {
+                const gridElement = document.createElement("div");
+
+                element.innerHTML = ''
+                element.appendChild(gridElement)
 
                 gridElement.id = "main";
                 gridElement.className = "container";
@@ -50,8 +75,6 @@
                     rowElement.id = "row" + row;
                     rowElement.style.height = `${ySize + 2}px`;
 
-                    gridArray.push([]);
-
                     for (let col = 0; col < height; ++col) {
                         let box = rowElement.appendChild(document.createElement("canvas"));
                         box.className = "box";
@@ -60,36 +83,51 @@
 
                         box.position = { x: col, y: row };
 
-                        boxInit(box, playerList, col, row)
-
-                        gridArray[row].push(box);
+                        boxInit(box, gridArray[row][col], row, col)
                     }
                 }
             }
 
 
-            function boxInit(box, players,x, y) {
-                const boxPlayers = players.find(player => player.position.x === x && player.position.y === y)
+            function boxInit(box, player, x, y) {
+                if (player && player.user_id === playerId) {
+                    colorCanvas(box, "#239337")
+                }
+                else if (player) {
+                    colorCanvas(box, "rgba(168,29,29,0.62)")
+                    box.addEventListener("click", () => {
+                        let formData = new FormData();
+                        formData.append('x', x)
+                        formData.append('y', y)
 
-                box.addEventListener("click", () => {
-                    let formData = new FormData();
-                    formData.append('x', x)
-                    formData.append('y', y)
+                        fetch(`/action/${gameId}/attack/${player._id}`, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                        } )
+                            .then(res => draw())
+                            .catch(e => console.log(e))
+                    })
+                } else {
+                    box.addEventListener("click", () => {
+                        let formData = new FormData();
+                        formData.append('x', x)
+                        formData.append('y', y)
 
-                    fetch(`/action/${gameId}/move`, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({x: x, y: y})
-                    } )
-                        .then(res => location.reload())
-                        .catch(e => console.log(e))
-                })
-
-                if (boxPlayers && boxPlayers.user_id === userPlayer.user_id) colorCanvas(box, "#2d2f9e")
-                else if (boxPlayers) colorCanvas(box, "#a81d1d")
+                        fetch(`/action/${gameId}/move`, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({x: x, y: y})
+                        } )
+                            .then(res => draw())
+                            .catch(e => console.log(e))
+                    })
+                }
             }
 
             /**
