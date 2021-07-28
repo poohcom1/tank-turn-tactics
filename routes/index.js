@@ -63,8 +63,16 @@ router.get('/play', isLoggedIn, async (req, res) => {
     }
 })
 
+// Admin
+
+router.get('/admin', isAdmin, async (req, res) => {
+    res.render("pages/admin")
+})
+
 module.exports = (app) => {
     app.use('/', router)
-    app.use('/auth', require('./authRouter.js'))
-    app.use('/game', require('./gameRouter.js'))
+    app.use('/auth', require('./auth_router.js'))
+    app.use('/user', require('./user_router.js'))
+    app.use('/game', require('./game_router.js'))
+    app.use('/action', require('./action_router.js'))
 }

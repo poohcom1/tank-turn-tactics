@@ -33,9 +33,10 @@ const schemaObject = {
         }
     },
     password: String,
-    creator_id: { type: mongoose.ObjectId, required: true },
+    creator_id: { type: mongoose.Types.ObjectId, required: true },
 
     hasStarted: { type: Boolean, default: false },
+    startedAt: { type: Date },
 
     // Game options
     actionsPerDay: { type: Number, default: 1 },

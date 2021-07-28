@@ -19,8 +19,9 @@ module.exports = class DBHandler {
         const uri = this.mongoMemoryServer.getUri();
         const mongooseOpts = {
             useNewUrlParser: true,
+            useFindAndModify: false,
             useUnifiedTopology: true,
-            poolSize: 10
+            useCreateIndex: true
         };
 
         await mongoose.connect(uri, mongooseOpts);
@@ -37,7 +38,7 @@ module.exports = class DBHandler {
 
         for (const key in collections) {
             const collection = collections[key];
-            await collection.deleteMany();
+            await collection.deleteMany({});
         }
     }
 

@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 
 const playerSchema = new mongoose.Schema({
-    user_id: mongoose.ObjectId,
-    game_id: mongoose.ObjectId,
+    user_id: { type: mongoose.Types.ObjectId, required: true },
+    game_id: { type: mongoose.Types.ObjectId, required: true },
     name: {
         type: String,
         required: true

@@ -11,6 +11,7 @@
 
             startButton.addEventListener("click", () => {
                 fetch(`/game/${gameId}/start`, { method: 'PUT' })
+                    .then(() => window.location.reload())
             })
         </script>
     <% } %>

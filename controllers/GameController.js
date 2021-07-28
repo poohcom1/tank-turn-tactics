@@ -1,6 +1,7 @@
 const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
 const { assignLocation } = require("../libs/game_utils.js");
+const mongoose = require("mongoose");
 
 // Form routes
 
@@ -108,6 +109,7 @@ module.exports.startGame = async function (req, res) {
     const players = await Player.find({ game_id: gameId })
     const game = await Game.findOne({ _id: gameId })
 
+
     const locations = assignLocation(players.length, game.size)
 
     await Promise.all(players.map((player, i) => {
@@ -117,10 +119,22 @@ module.exports.startGame = async function (req, res) {
 
     await Game.findByIdAndUpdate(gameId, {
         hasStarted: true,
-        actionsPerDay: 2
+        actionsPerDay: 2,
+        startedAt: new Date()
     })
 
     res.redirect("/play?game=" + gameId)
+}
+
+module.exports.getPlayer = async function (req, res) {
+    const gameId = req.params.gameId
+
+    const player = await Player.find({ user_id: req.user.id, game_id: gameId })
+
+    if (player[0])
+        res.json(player[0])
+    else
+        res.status(500).send()
 }
 
 module.exports.getPlayers = async function (req, res) {
@@ -134,28 +148,55 @@ module.exports.getPlayers = async function (req, res) {
 // GET routes
 
 /**
- * Game all games belonging to the current user
+ * Get all games belonging to the current user
  * @param req
  * @param res
  */
 module.exports.getUserGames = async function (req, res) {
     const userId = req.user.id;
 
-    const userPlayerList = await Player.find({ user_id: userId })
+    const userPlayerList = await Player.find({ user_id: mongoose.Types.ObjectId(userId) })
 
-    const gameList = await Promise.all(userPlayerList.map(player => Game.findById(player.game_id).lean()))
+    const gameList = await Promise.all(
+        userPlayerList.map( player => Game.findById(player.game_id).lean() )
+    )
 
-    const players = await Player.find({ game_id: { $in: gameList.map(game => game._id) }})
-
-    gameList.map(game => game.players = [])
-
-    players.forEach(player => gameList.filter(game => game._id.toString() === player.game_id.toString())[0].players.push(player))
-
-    res.json(gameList);
+    res.json(await joinGamesWithPlayer(gameList));
 }
 
+/**
+ * Appends all a games player to the game as 'players'
+ * @param gameObjects
+ * @return {Promise<Game[]>}
+ */
+async function joinGamesWithPlayer(gameObjects) {
+     return await Promise.all(gameObjects.map(
+        async game => {
+            game.players = [];
+            game.players = await Player.find({ game_id: mongoose.Types.ObjectId(game._id) });
+
+            return game;
+        }
+    ))
+}
+
+
+// Admin
 module.exports.deleteGame = async function (req, res) {
     const gameId = req.params.gameId;
-    await Player.deleteMany({ game_id: gameId})
-    await Game.findByIdAndDelete(gameId)
+
+    try {
+        await Player.deleteMany({ game_id: gameId })
+        await Game.findByIdAndDelete(gameId)
+
+        res.send(200)
+    } catch (e) {
+        res.send(e)
+    }
+}
+
+module.exports.getAllGames = async function (req, res) {
+    const gameList = await Game.find().lean()
+
+    res.json(await joinGamesWithPlayer(gameList))
 }

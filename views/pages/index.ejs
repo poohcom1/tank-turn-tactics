@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="css/index.css">
+    <script type="text/javascript" src="js/games_table.js"></script>
     <title>Tank Turn Tactics</title>
 </head>
 <body>
@@ -14,38 +15,8 @@
             }
         </style>
         <h2>Welcome, <%= user %></h2>
-        <table id="gameTable"></table>
-        <script>
-            // Generate games table
-            fetch('/game', { method: 'GET'})
-            .then(res => res.json())
-            .then(games => {
-                const _MS_PER_DAY = 1000 * 60 * 60 * 24;
-
-                // a and b are javascript Date objects
-                function dateDiffInDays(a, b) {
-                    // Discard the time and time-zone information.
-                    const utc1 = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
-                    const utc2 = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
-
-                    return Math.floor((utc2 - utc1) / _MS_PER_DAY);
-                }
-
-                const table = document.querySelector('#gameTable');
-
-                table.innerHTML = "<tr><th>Game</th><th>Days</th><th>Players</th><th>State</th></tr>"
-
-                games.forEach(game => {
-                    const age = dateDiffInDays(new Date(game.createdAt), new Date())
-                    table.innerHTML += `<tr>
-                        <th><a href="/play?game=${game._id}">${game.name}</a></th>
-                        <th>${age}</th>
-                        <th>${game.players.length}</th>
-                        <th>${game.hasStarted ? 'In' : 'Lobby'}</th>
-                    </tr>`
-                })
-            })
-        </script>
+        <div id="gameTable"></div>
+        <script>generateGamesTable('#gameTable')</script>
         <a href="/join">Join a game</a>
         <a href="/create-game">Create a game</a>
         <a href="/auth/logout">Logout</a>

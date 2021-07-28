@@ -1,8 +1,8 @@
 const express = require('express');
+const passport = require("passport");
 const path = require('path');
 const session = require('express-session');
 const MongoDBStore = require('connect-mongodb-session')(session);
-const passport = require("passport");
 require('ejs')
 
 // Only use .env in development mode
@@ -33,9 +33,12 @@ app.use(session({
     saveUninitialized: true,
     store: new MongoDBStore({
         uri: dbUri,
-        collection: 'sessions'
+        collection: 'sessions',
+        options: dbOptions
     }),
-    cookie: { maxAge: 1000 * 60 * 60 * 24 }
+    cookie: { maxAge: 1000 * 60 * 60 * 24 },
+    httpOnly: true,
+    secure: true
 }))
 
 // Passport setup
@@ -48,11 +51,10 @@ app.use(passport.session())
 require('./routes')(app)
 
 // Error handling
-// app.use((req, res, next) => {
-//     const error = new Error("Not found");
-//     error.status = 404;
-//     next(error);
-// });
+app.use((err, req, res, next) => {
+    console.log(err)
+    next(err);
+});
 //
 // // error handler middleware
 // app.use((error, req, res, next) => {
