@@ -22,7 +22,7 @@ router.get('/login', (req, res) => {
 
 // Join/create
 router.get('/create-game', isLoggedIn, (req, res) => {
-    res.render('pages/game_create', { username: req.user.username } )
+    res.render('pages/game/create', { username: req.user.username } )
 })
 
 router.get('/game-created/:gameId', isLoggedIn,(req, res) => {
@@ -43,7 +43,7 @@ router.get('/join/:gameId?', isLoggedIn, (req, res, next) => {
     //
     // })
 
-    res.render('pages/game_join', {
+    res.render('pages/game/join', {
         gameName: "",
         username: req.user.username,
         usePassphrase: "",
@@ -58,14 +58,13 @@ router.get('/play', isLoggedIn, async (req, res) => {
     const game = await Game.findById(gameId)
 
     if (game.hasStarted) {
-        res.render('pages/game_play')
+        res.render('pages/game/play')
     } else {
-        res.render('pages/game_lobby', { isCreator: game.creator_id.equals(req.user.id) })
+        res.render('pages/game/lobby', { isCreator: game.creator_id.equals(req.user.id) })
     }
 })
 
 // Admin
-
 router.get('/admin', isAdmin, async (req, res) => {
     res.render("pages/admin")
 })
