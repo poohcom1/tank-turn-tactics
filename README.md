@@ -1,12 +1,12 @@
 # Tank Turn Tactics
 
-This project is still in very early stage of development!
+This project is still in its very early stage of development!
 
 
 ## Setup
 1. Copy the `sample.env` file and rename it to `.env` to set up environment variables
 2. Run `npm install` to install dependencies
-3. Run `npm run start` to start server or `npm run start:debug` to allow stack trace
+3. Start the server with `npm run start` or `npm run start:debug` if you want stack trace
 
 ## Project Structure
 ```

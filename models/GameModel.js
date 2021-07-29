@@ -39,7 +39,6 @@ const gameSchema = new mongoose.Schema({
     doEscort: { type: Boolean, default: false }
 }, { timestamps: true });
 
-
 const Game = mongoose.model("games", gameSchema)
 
 module.exports = Game;
