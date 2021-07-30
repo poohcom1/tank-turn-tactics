@@ -1,0 +1,27 @@
+.container {
+  width: fit-content;
+  height: fit-content;
+  padding: 0;
+  margin: 0;
+}
+
+.row {
+  width: fit-content;
+
+  overflow: hidden;
+
+  padding: 0;
+  margin: 0;
+}
+
+.box {
+  display: inline-block;
+  border: 1px solid black;
+
+  /* height: 50px;
+  width: 50px; */
+  /* max-height: 50px;
+  max-width: 50px; */
+  padding: 0;
+  margin: 0;
+}
