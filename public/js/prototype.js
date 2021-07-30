@@ -109,9 +109,9 @@ class Driver {
         this.redraw();
     }
 
-    run = () => {
+    run = (frame_interval) => {
         if(this.mode = Driver.MODE_ACTIVE){
-            setInterval(this.update, 30);
+            setInterval(this.update, frame_interval);
         }
     }
 
@@ -230,7 +230,7 @@ class PassiveYuri {
 
     driver.components.push(face);
     driver.components.push(ball);
-    driver.run();
+    driver.run(16);
 
 
 
