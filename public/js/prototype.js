@@ -136,6 +136,19 @@ class TestGameObject {
             this.y = driver.mouse_events.y;
             console.log("mouse down!" + parseInt(this.x) +" : "+ parseInt(this.y));
         }
+
+        if(driver.key_events['ArrowRight'] == true){
+            this.x = this.x + 10;
+        }
+        if(driver.key_events['ArrowLeft'] == true){
+            this.x = this.x - 10;
+        }
+        if(driver.key_events['ArrowUp'] == true){
+            this.y = this.y - 10;
+        }
+        if(driver.key_events['ArrowDown'] == true){
+            this.y = this.y + 10;
+        }
     }
 }
 
