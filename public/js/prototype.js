@@ -167,7 +167,7 @@ class Ball {
 }
 
 class PassiveYuri {
-    picture = "/test2.jpg";
+    picture = "/test.jpg";
     x = 0;
     y = 0;
 
@@ -235,21 +235,3 @@ class PassiveYuri {
     driver2.redraw();
 
 })();
-
-
-
-/*
-    let test_img = new Image;
-    test_img.src = "/test.jpg";
-
-    let promise1 = new Promise((resolve, reject) => {
-        test_img.onload = resolve;
-    });
-
-    promise1.then(() => {
-        ctx.drawImage(test_img, 0, 0, 100, 100 * test_img.height / test_img.width);
-    }, null);
-
-
-    engine.imagePreload();
-    */
