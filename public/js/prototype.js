@@ -16,17 +16,17 @@ class Driver {
     //push your components here
     components = [];
 
-    constructor(ctx, document_handle, mode = Driver.MODE_PASSIVE, bg_color = "#000000"){
+    constructor(ctx, parent_div, document_handle, mode = Driver.MODE_PASSIVE, bg_color = "#000000"){
         this.canvas_ctx = ctx;
         this.mode = mode;
         this.bg_color = bg_color;
 
-        ctx.canvas.addEventListener("click", this.onMouseEvent);
-        ctx.canvas.addEventListener("mousedown", this.onMouseEvent);
-        ctx.canvas.addEventListener("mouseup", this.onMouseEvent);
-        ctx.canvas.addEventListener("mousemove", this.onMouseEvent);
-        ctx.canvas.addEventListener("mouseout", this.onMouseEvent);
-        ctx.canvas.addEventListener("mousewheel", this.onMouseEvent);
+        parent_div.addEventListener("click", this.onMouseEvent);
+        parent_div.addEventListener("mousedown", this.onMouseEvent);
+        parent_div.addEventListener("mouseup", this.onMouseEvent);
+        parent_div.addEventListener("mousemove", this.onMouseEvent);
+        parent_div.addEventListener("mouseout", this.onMouseEvent);
+        parent_div.addEventListener("mousewheel", this.onMouseEvent);
 
         document_handle.addEventListener("keydown",  this.onKeyEvent);
         document_handle.addEventListener("keyup",  this.onKeyEvent);
@@ -123,7 +123,7 @@ class Driver {
 
 class TestGameObject {
     picture = "/test2.jpg";
-    x = 0;
+    x = 200;
     y = 0;
 
     redraw = (driver) => {
@@ -210,12 +210,15 @@ class PassiveYuri {
 }
 
 (async () => {
+    let parent_div = document.getElementById("parent_div");
+
+
     let canvas = document.getElementById("root_canvas");
     let ctx = canvas.getContext("2d");
     ctx.canvas.width = 1000;
     ctx.canvas.height = 1000;
 
-    let driver = new Driver(ctx, document, Driver.MODE_ACTIVE, Driver.TRANSPARENT);
+    let driver = new Driver(ctx, parent_div, document, Driver.MODE_ACTIVE, Driver.TRANSPARENT);
 
     let images = ['/test.jpg', '/test2.jpg', '/ball.jpg'];
 
@@ -238,7 +241,7 @@ class PassiveYuri {
     ctx2.canvas.width = 1000;
     ctx2.canvas.height = 1000;
 
-    let driver2 = new Driver(ctx2, document, Driver.MODE_PASSIVE, "#000000");
+    let driver2 = new Driver(ctx2, parent_div, document, Driver.MODE_PASSIVE, "#000000");
 
     promises = driver2.imagePreload(images);
     await promises;
