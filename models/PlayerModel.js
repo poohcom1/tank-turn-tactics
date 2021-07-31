@@ -15,6 +15,7 @@ const playerSchema = new mongoose.Schema({
         type: Number,
         default: 1
     },
+    // Must match enum name in GameModel.js!
     range: {
         type: Number,
         default: 1
