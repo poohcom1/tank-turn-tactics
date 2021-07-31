@@ -22,11 +22,11 @@ router.post('/register', (req, res, next) => {
         .catch(err => next(err))
 })
 
-router.post('/login', passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login'}))
+router.post('/login', passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login?error=true'}))
 
 router.get('/logout', (req, res) => {
     req.logout()
-    res.redirect('/')
+    res.redirect('/login')
 })
 
 module.exports = router;

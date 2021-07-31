@@ -1,0 +1,35 @@
+<h2>Login</h2>
+<div id="login">
+    <form action="/auth/login" method="post">
+        <div>
+            <p class="error"></p>
+            <script>
+                const urlParams = new URLSearchParams(window.location.search);
+                const error = urlParams.get('error')
+                console.log(error)
+                if (error) document.querySelector("p.error").innerHTML = "Invalid username or password!"
+            </script>
+
+            <label for="username">Username: </label>
+            <input type="text" id="username" name="username" required/>
+
+            <br/>
+
+            <label for="password">Password: </label>
+            <input type="password" id="password" name="password" required/>
+        </div>
+        <button type="submit">Login</button>
+    </form>
+
+    <a href="/register">Register an account</a>
+</div>
+
+<style>
+    h2 {
+        margin: 2px;
+    }
+
+    #login {
+
+    }
+</style>
