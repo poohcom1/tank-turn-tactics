@@ -1,24 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="css/index.css">
-    <script type="text/javascript" src="js/games_table.js"></script>
-    <title>Tank Turn Tactics</title>
-</head>
+<%- include('../partials/head.html') %>
 <body>
-    <h1>Tank Turn Tactics</h1>
-    <div>
-        <style>
-            table, th, tr {
-                border: 1px solid black;
-            }
-        </style>
-        <h2>Welcome, <%= user %></h2>
-        <div id="gameTable"></div>
-        <script>generateGamesTable('#gameTable')</script>
-        <a href="/join">Join a game</a>
-        <a href="/create-game">Create a game</a>
-        <a href="/auth/logout">Logout</a>
+    <script type="text/javascript" src="js/games_table.js"></script>
+    <div class="card">
+        <h1>Tank Turn Tactics</h1>
+        <div>
+            <h3>Welcome, <%= user %></h3>
+            <h4>Active Games:</h4>
+            <div id="gameTable"></div>
+            <script>generateGamesTable('#gameTable')</script>
+
+            <hr/>
+
+            <a href="/join">Join a game</a>
+            <a href="/create-game">Create a game</a>
+            <a href="/auth/logout">Logout</a>
+        </div>
     </div>
 </body>
+
+<style>
+    .card {
+        margin: 15px auto;
+    }
+</style>
+
+<%- include('../partials/footer.html') %>
