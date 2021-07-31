@@ -1,14 +1,13 @@
-<%- include('../partials/head.html') %>
-
-<h1>Register</h1>
-<div>
-    <form action="/auth/register" method="post">
+<h2>Login</h2>
+<div id="login">
+    <form action="/auth/login" method="post">
         <div>
             <p class="error"></p>
             <script>
                 const urlParams = new URLSearchParams(window.location.search);
                 const error = urlParams.get('error')
-                if (error) document.querySelector("p.error").innerHTML = "User with that e-mail already exists!"
+                console.log(error)
+                if (error) document.querySelector("p.error").innerHTML = "Invalid username or password!"
             </script>
 
             <label for="email">E-mail: </label>
@@ -19,6 +18,18 @@
             <label for="password">Password: </label>
             <input type="password" id="password" name="password" required/>
         </div>
-        <button type="submit">Register</button>
+        <button type="submit">Login</button>
     </form>
+
+    <a href="/register">Register an account</a>
 </div>
+
+<style>
+    h2 {
+        margin: 2px;
+    }
+
+    #login {
+
+    }
+</style>

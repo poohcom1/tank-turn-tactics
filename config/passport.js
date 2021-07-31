@@ -5,19 +5,19 @@ require('../libs/password_utils.js')
 const { validPassword } = require("../libs/password_utils.js");
 
 const fieldNames = {
-    username: 'username',
-    password: 'password'
+    usernameField: 'email',
+    passwordField: 'password'
 }
 
 /**
  *
- * @param username
+ * @param email
  * @param password
  * @param done Finished callback
  */
-function verifyCallback(username, password, done) {
+function verifyCallback(email, password, done) {
     // Find user in database
-    User.findOne({ username: username }, async function (err, user) {
+    User.findOne({ email: email }, async function (err, user) {
         // If err
         if (err) { console.log("DB Error"); return done(err); }
         // If user not found

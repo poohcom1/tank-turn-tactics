@@ -1,7 +1,131 @@
-a {
-    display: block;
+:root {
+    --primary: #342e2e;
+    --secondary: #a4a29b;
+    --secondary-glow: #eeeae9;
+
+    --contrast: #f8c33d;
+
+    --card-background: rgba(5, 5, 5, 0.45);
+
+    --error: #e03f3f;
+
+    --input-text: white;
+
+    --main-font: 'Georama';
 }
 
-table, tr, th, td {
-    border: black solid 1px;
+* {
+    font-family: var(--main-font), sans-serif;
+}
+
+body {
+    background-color: var(--primary);
+    color: var(--secondary)
+}
+
+h1, h2, h3 {
+    margin: 5px;
+    font-family: 'Kanit', sans-serif;
+}
+
+input:-webkit-autofill {
+    -webkit-text-fill-color: var(--input-text) !important;
+    -webkit-background-clip: text;
+}
+
+a {
+    display: block;
+    text-decoration: none;
+    color: var(--contrast);
+    transition: all 0.2s;
+    margin: 5px;
+}
+
+a:hover {
+    color: white;
+    text-shadow: var(--secondary) 0 0 5px;
+}
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    border-style: hidden;
+
+    font-size: 20px;
+}
+
+table td, table th {
+    border: 1px solid var(--secondary);
+}
+
+th, td {
+    padding: 5px;
+}
+
+
+/* Forms */
+
+button {
+    background-color: var(--primary);
+    border: var(--secondary) solid 1px;
+    border-radius: 2px;
+
+    color: var(--secondary);
+    font-size: 16px;
+
+    margin: 10px;
+    padding: 5px 10px;
+
+    text-align: center;
+    text-decoration: none;
+
+    display: inline-block;
+
+    transition: all 0.1s;
+}
+
+button:hover {
+    color: var(--contrast);
+    border: var(--contrast) solid 1px;
+}
+
+button:focus {
+    color: white;
+}
+
+input {
+    color: var(--input-text);
+
+    margin: 5px;
+    border: 0;
+    outline: 0;
+    background-color: transparent;
+    border-bottom: 1px solid var(--secondary);
+    caret-color: var(--secondary);
+}
+
+input::placeholder {
+    color: var(--input-text)
+}
+
+input:focus {
+    border-bottom: 1px solid var(--secondary-glow);
+}
+
+
+/* Templates */
+
+.error {
+    color: var(--error)
+}
+
+.card {
+    width: fit-content;
+    padding: 15px;
+
+
+    border-radius: 15px;
+
+    box-shadow: gray 0 0 15px;
+    background-color: var(--card-background);
 }
