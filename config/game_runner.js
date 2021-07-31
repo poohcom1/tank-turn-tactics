@@ -3,14 +3,11 @@ const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
 const actionFunctions =  require('../controllers/ActionController.js')
 
-const rule = new schedule.RecurrenceRule();
-rule.hour = 0;
+schedule.scheduleJob('0 * * * *', async function() {
+    const allGames = await Game.find({ hasStarted: true});
 
-schedule.scheduleJob(rule, async function() {
-    const allGames = await Game.find({});
-
-    console.log("Actions distributed!");
-    allGames.forEach(distributeActions);
+    console.log("Actions distributed! - " + new Date());
+    allGames.forEach(await distributeActions);
 
     const queuedGames = allGames.filter(game => game.doActionQueue);
     queuedGames.forEach(await doActionQueue);
@@ -20,11 +17,11 @@ async function distributeActions(game) {
     if (game.turnTimePassed >= game.turnTime) {
         game.turnTimePassed = 1;
 
-        const allPlayers = await Player.find({ game_id: game._id});
+        const allPlayers = await Player.find({ game_id: game._id });
 
-        allPlayers.forEach(player => {
+        allPlayers.map(async player => {
             player.actions += game.actionsPerInterval;
-            player.save().then();
+            await player.save()
         })
     } else {
         game.turnTimePassed++;
