@@ -1,12 +1,20 @@
+<%- include('../partials/head.html') %>
+
 <h1>Register</h1>
 <div>
     <form action="/auth/register" method="post">
         <div>
+            <p class="error"></p>
+            <script>
+                const urlParams = new URLSearchParams(window.location.search);
+                const error = urlParams.get('error')
+                if (error) document.querySelector("p.error").innerHTML = "User with that e-mail already exists!"
+            </script>
+
             <label for="email">E-mail: </label>
             <input type="email" id="email" name="email" required/>
 
-            <label for="username">Username: </label>
-            <input type="text" id="username" name="username" required/>
+            <br/>
 
             <label for="password">Password: </label>
             <input type="password" id="password" name="password" required/>
