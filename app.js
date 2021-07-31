@@ -59,13 +59,19 @@ app.use(function(req, res, next){
     res.status(404).send("Whoops, not found!");
 });
 
+// Start game
+
+require("./config/game_runner.js")
+
 app.on('ready', () => {
     /* App started here */
     const server = app.listen(process.env.PORT, () => {
 
         const address = process.env.NODE_ENV === 'development' ? `http://localhost:${ process.env.PORT }` : `port ${ process.env.PORT }`;
 
-        console.log(`[app] Server running on ${ address } in ${ process.env.NODE_ENV } mode`)
+        const time = new Date().toLocaleTimeString('en-US', { month: '2-digit', day: '2-digit', hour:'2-digit', minute: '2-digit', second: '2-digit'})
+
+        console.log(`[app] (${ time }) Server running on ${ address } in ${ process.env.NODE_ENV } mode`)
     });
 })
 
