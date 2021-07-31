@@ -1,12 +1,11 @@
 const router = require('express').Router()
 const { isLoggedIn, isAdmin } = require('../middlewares/auth_middleware.js')
 const Game = require('../models/GameModel.js')
-const { checkGame, checkPlayer } = require("../middlewares/action_middleware.js");
 
 // Pages
 router.get('/', (req, res) => {
     if (req.isAuthenticated()) {
-        res.render('pages/index', { user: req.user.username })
+        res.render('pages/index', { user: req.user.email })
     } else {
         res.redirect('/login')
     }
@@ -17,6 +16,9 @@ router.get('/register', (req, res) => {
 })
 
 router.get('/login', (req, res) => {
+    if (req.isAuthenticated()) {
+        return res.redirect('/')
+    }
     res.render('pages/login', { message: req.message ? res.message : '' })
 })
 

@@ -3,30 +3,36 @@ const passport = require('passport');
 const { hashPassword, validPassword } = require('../libs/password_utils.js');
 const User = require('../models/UserModel.js');
 
+router.get('/checkUser')
+
 router.post('/register', (req, res, next) => {
-    const { username, email, password } = req.body;
+    const { email, password } = req.body;
 
     hashPassword(password)
         .then(saltHash => {
             const user = new User({
-                username: username,
                 email: email,
                 hash: saltHash.hash,
                 salt: saltHash.salt
             })
 
+            console.log(user)
+
             user.save()
                 .then(() => res.redirect('/'))
-                .catch(err => next(err))
+                .catch(err => {
+                    console.log(err)
+                    res.redirect(`/register?error=true`)
+                })
         })
-        .catch(err => next(err))
+        .catch(err => res.redirect(`/register?error=true`))
 })
 
-router.post('/login', passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login'}))
+router.post('/login', passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login?error=true'}))
 
 router.get('/logout', (req, res) => {
     req.logout()
-    res.redirect('/')
+    res.redirect('/login')
 })
 
 module.exports = router;
