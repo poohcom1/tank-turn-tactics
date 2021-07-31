@@ -32,7 +32,7 @@ const gameSchema = new mongoose.Schema({
     tieCount: { type: Number, default: 2 },
 
     allowAlwaysJoin: { type: Boolean, default: false },
-    allowVoteChange: { type: Boolean, default: true },
+    allowVoteChange: { type: Boolean, default: false },
 
     doActionQueue: { type: Boolean, default: false },
     doBroadcastAction: { type: Boolean, default: true },

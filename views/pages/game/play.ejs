@@ -7,141 +7,181 @@
 <body>
 <h1>Game</h1>
     <div id="gameGrid"></div>
+    <div id="stats">
+        <h3 id="name"></h3>
+        <p id="actions"></p>
+        <p id="health"></p>
+        <p id="range"></p>
+    </div>
+
+
     <script>
-        (async () => {
-            let playerId = 0;
-            let gameId
+    (async () => {
+        let playerId = 0;
+        let gameId
 
-            const draw = async () => {
-                const urlParams = new URLSearchParams(window.location.search);
-                gameId = urlParams.get('game')
+        let gameObject;
+        let players;
+        let userPlayer;
 
-                // Get data
-                const gameRes = await fetch(`/game/${gameId}`, { method: 'GET' });
-                const gameResponse = await gameRes.json();
+        async function fetchData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            gameId = urlParams.get('game')
 
-                const userPlayer = await (await fetch(`/game/${gameId}/player`, { method: 'GET' })).json()
-                playerId = userPlayer.user_id
+            // Get data
+            const gameRes = await fetch(`/game/${gameId}`, { method: 'GET' });
+            const gameResponse = await gameRes.json();
 
-                const gameObject = gameResponse.game;
-                const players = gameResponse.players;
+            userPlayer = await (await fetch(`/game/${gameId}/player`, { method: 'GET' })).json()
+            playerId = userPlayer.user_id
 
-                const size = gameObject.size;
+            gameObject = gameResponse.game;
+            players = gameResponse.players;
 
-                const grid = [];
+            dispatchEvent(new CustomEvent('data-updated', { game: gameObject, player: userPlayer, players: players }))
+        }
 
-                for (let x = 0; x < size.width; x++) {
-                    grid.push([])
+        function setStats(player) {
+            document.querySelector('#stats #name').innerHTML = player.name + ":";
+            document.querySelector('#stats #actions').innerHTML = "Action points: " + player.actions;
+            document.querySelector('#stats #health').innerHTML = "Health: " + player.health;
+            document.querySelector('#stats #range').innerHTML = "Range: " + player.range;
+        }
 
-                    for (let y = 0; y < size.height; y++) {
-                        const playerAtPosition = players.find(player => player.position.x === x && player.position.y === y)
+        function draw() {
+            const size = gameObject.size;
 
-                        if (playerAtPosition) {
-                            grid[x].push(playerAtPosition)
-                        } else {
-                            grid[x].push(false)
+            const grid = [];
+
+            for (let x = 0; x < size.width; x++) {
+                grid.push([])
+
+                for (let y = 0; y < size.height; y++) {
+                    const playerAtPosition = players.find(player => player.position.x === x && player.position.y === y)
+
+                    if (playerAtPosition) {
+                        grid[x].push(playerAtPosition)
+                    } else {
+                        grid[x].push(false)
+                    }
+                }
+            }
+
+            drawGrid(document.querySelector("#gameGrid"), size.width, size.height, 50, 50, grid);
+        }
+
+
+        addEventListener('data-updated', async () => {
+            draw();
+            setStats(userPlayer)
+        })
+
+        await fetchData();
+
+        /**
+         *
+         * @param {HTMLElement} element
+         * @param {number} width
+         * @param {number} height
+         * @param {number} xSize
+         * @param {number} ySize
+         * @param {Array} gridArray
+         */
+        function drawGrid(element, width, height, xSize, ySize, gridArray) {
+            const gridElement = document.createElement("div");
+
+            element.innerHTML = ''
+            element.appendChild(gridElement)
+
+            gridElement.id = "main";
+            gridElement.className = "container";
+
+            for (let row = 0; row < width; ++row) {
+                let rowElement = gridElement.appendChild(
+                    document.createElement("div")
+                );
+                rowElement.className = "row";
+                rowElement.id = "row" + row;
+                rowElement.style.height = `${ySize + 2}px`;
+
+                for (let col = 0; col < height; ++col) {
+                    let box = rowElement.appendChild(document.createElement("canvas"));
+                    box.className = "box";
+                    box.style.width = `${xSize}px`;
+                    box.style.height = `${ySize}px`;
+
+                    box.position = { x: col, y: row };
+
+                    boxInit(box, gridArray[row][col], row, col)
+                }
+            }
+        }
+
+        function boxInit(box, player, x, y) {
+            if (player) box.addEventListener("click", () => setStats(player))
+
+            if (player && player.user_id === playerId && player.health > 0) {
+                colorCanvas(box, "#8813af")
+            } else if (player && player.health > 0) {
+                colorCanvas(box, "rgba(168,29,29,0.62)")
+                box.addEventListener("click", () => {
+                    // Attack
+                    let formData = new FormData();
+                    formData.append('x', x)
+                    formData.append('y', y)
+
+                    fetch(`/action/${ gameId }/attack/${ player._id }`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
                         }
-                    }
-                }
-
-                drawGrid(document.querySelector("#gameGrid"), size.width, size.height, 50, 50, grid);
-            }
-
-            await draw();
-
-            /**
-             *
-             * @param {HTMLElement} element
-             * @param {number} width
-             * @param {number} height
-             * @param {number} xSize
-             * @param {number} ySize
-             * @param {Array} gridArray
-             */
-            function drawGrid(element, width, height, xSize, ySize, gridArray) {
-                const gridElement = document.createElement("div");
-
-                element.innerHTML = ''
-                element.appendChild(gridElement)
-
-                gridElement.id = "main";
-                gridElement.className = "container";
-
-                for (let row = 0; row < width; ++row) {
-                    let rowElement = gridElement.appendChild(
-                        document.createElement("div")
-                    );
-                    rowElement.className = "row";
-                    rowElement.id = "row" + row;
-                    rowElement.style.height = `${ySize + 2}px`;
-
-                    for (let col = 0; col < height; ++col) {
-                        let box = rowElement.appendChild(document.createElement("canvas"));
-                        box.className = "box";
-                        box.style.width = `${xSize}px`;
-                        box.style.height = `${ySize}px`;
-
-                        box.position = { x: col, y: row };
-
-                        boxInit(box, gridArray[row][col], row, col)
-                    }
-                }
-            }
-
-            function boxInit(box, player, x, y) {
-                if (player && player.user_id === playerId && player.health > 0) {
-                    colorCanvas(box, "#239337")
-                } else if (player && player.health > 0) {
-                    colorCanvas(box, "rgba(168,29,29,0.62)")
-                    box.addEventListener("click", () => {
-                        let formData = new FormData();
-                        formData.append('x', x)
-                        formData.append('y', y)
-
-                        fetch(`/action/${gameId}/attack/${player._id}`, {
-                            method: 'POST',
-                            headers: {
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json'
-                            }
-                        } )
-                            .then(res => draw())
-                            .catch(e => console.log(e))
                     })
-                } else {
+                        .then(res => draw())
+                        .catch(e => console.log(e))
+                })
+            } else {
+                // Move
+                if ((Math.abs(x - userPlayer.position.x) < 2 && Math.abs(y - userPlayer.position.y) < 2)) {
+                    colorCanvas(box, "rgba(35,147,55,0.35)")
+
                     box.addEventListener("click", () => {
                         let formData = new FormData();
                         formData.append('x', x)
                         formData.append('y', y)
 
-                        fetch(`/action/${gameId}/move`, {
+                        fetch(`/action/${ gameId }/move/${ x }/${ y }`, {
                             method: 'POST',
                             headers: {
                                 'Accept': 'application/json',
                                 'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify({x: x, y: y})
-                        } )
-                            .then(res => draw())
+                            body: JSON.stringify({ x: x, y: y })
+                        })
+                            .then(res => fetchData())
                             .catch(e => console.log(e))
                     })
+                } else if (Math.abs(x - userPlayer.position.x) < userPlayer.range && Math.abs(y - userPlayer.position.y) < userPlayer.range) {
+                    colorCanvas(box, "rgb(222,192,117)")
                 }
             }
+        }
 
-            /**
-             *
-             * @param {HTMLCanvasElement} canvasElement
-             * @param {string} color
-             */
-            function colorCanvas(canvasElement, color) {
-                const width = canvasElement.width;
-                const height = canvasElement.height;
+        /**
+         *
+         * @param {HTMLCanvasElement} canvasElement
+         * @param {string} color
+         */
+        function colorCanvas(canvasElement, color) {
+            const width = canvasElement.width;
+            const height = canvasElement.height;
 
-                const ctx = canvasElement.getContext('2d');
-                ctx.fillStyle = color
-                ctx.fillRect(0, 0, width, height)
-            }
-        })();
-    </script>
+            const ctx = canvasElement.getContext('2d');
+            ctx.fillStyle = color
+            ctx.fillRect(0, 0, width, height)
+        }
+    })();
+</script>
+
 </body>
 </html>

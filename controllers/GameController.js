@@ -29,17 +29,16 @@ module.exports.createGame = async (req, res) => {
         await new Player({
             user_id: req.user.id,
             game_id: gameId,
-            name: req.body.displayName !== '' ? req.body.displayName : req.user.username
+            name: req.body.displayName !== '' ? req.body.displayName : req.user.email
         }).save()
 
-        res.redirect(`/game-created/${ gameId }`)
+        res.redirect(`/play?game=${ gameId }`)
     } catch (e) {
-        // console.log(e)
+        console.log(e)
 
         // If error is thrown
         if (gameId) {
-            Game.deleteOne({ _id: gameId }).exec()
-                .then(() => res.redirect('/create-game'));
+            await Game.deleteOne({ _id: gameId }).exec()
         }
 
         res.redirect('/create-game')
@@ -62,12 +61,12 @@ module.exports.joinGame = async function (req, res) {
 
     try {
         await new Player({
-            name: responseJson.displayName !== '' ? responseJson.displayName : req.user.username,
+            name: responseJson.displayName !== '' ? responseJson.displayName : req.user.email,
             user_id: req.user.id,
             game_id: responseJson.gameId
         }).save()
 
-        res.send('Join successfully!')
+        res.redirect('/play?game=' + responseJson.gameId)
     } catch (e) {
         console.log(e)
         res.redirect('/join')

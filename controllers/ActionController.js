@@ -1,37 +1,28 @@
+const { checkRange, checkGrid } = require('../libs/game_utils.js')
 
 // All routes to game will have req.game and req.player
-
 const Player = require("../models/PlayerModel.js");
-
-function checkRange(position, target, range) {
-    return Math.abs(position.x - target.x) <= range && Math.abs(position.y - target.y) <= range
-}
-
-function checkGrid(position, game) {
-    return position.x >= 0 && position.y >= 0 && position.x < game.size.width && position.y < game.size.height
-}
 
 /**
  *
- * @param player
- * @param game
- * @param position
+ * @param {Object} game
+ * @param {Object} player
+ * @param {Object} data
  * @return {Promise<{message: string, status: number}>}
  */
-async function move(player, game, position) {
-    if (checkGrid(position, game) && checkRange(player.position, position, player.range)) {
+async function move(game, player, data) {
+    const position = data.position;
+
+    if (checkGrid(position, game) && checkRange(player.position, position, 1)) {
         try {
-            await player.updateOne({
-                position: {
-                    x: position.x,
-                    y: position.y
-                },
-                actions: player.actions-1
-            })
+            player.position.x = position.x;
+            player.position.y = position.y;
+            player.actions--;
+
+            await player.save();
         } catch (e) {
             return { status: 500, message: e }
         }
-
 
         return { status: 200, message: 'ok' };
     } else {
@@ -41,15 +32,16 @@ async function move(player, game, position) {
 
 /**
  *
- * @param player
- * @param targetId
+ * @param {Object} game
+ * @param {Object} player
+ * @param {Object} data
  * @return {Promise<{message: string, status: number}>}
  */
-async function attack(player, targetId) {
+async function attack(game, player, data) {
     let targetPlayer;
 
     try {
-        targetPlayer = await Player.findById(targetId);
+        targetPlayer = await Player.findById(data.targetId);
     } catch (e) {
         return { status: 500, message: e};
     }
@@ -78,20 +70,22 @@ async function attack(player, targetId) {
 
 /**
  *
- * @param player
- * @param upgrade
+ * @param {Object} game
+ * @param {Object} player
+ * @param {Object} data
  * @return {Promise<{message: string, status: number}>}
  */
-async function upgrade(player, upgrade) {
+async function upgrade(game, player, data) {
     const UPGRADES = ["range", "sight", "health"]
 
-    if (!UPGRADES.includes(upgrade)) {
+    if (!UPGRADES.includes(data.upgrade)) {
         return { status: 403, message: 'Unknown upgrade'}
     }
 
     try {
-        player[upgrade]++;
+        player[data.upgrade]++;
 
+        player.actions--;
         await player.save()
 
         return { status: 200, message: 'ok'}
@@ -100,86 +94,130 @@ async function upgrade(player, upgrade) {
     }
 }
 
-module.exports.moveRequest = async (req, res) => {
-    if (!req.game.doActionQueue) {
+/**
+ *
+ * @param {Object} game
+ * @param {Object} player
+ * @param {Object} data
+ * @return {Promise<{message: string, status: number}>}
+ */
+async function give(game, player, data) {
+    let targetPlayer;
 
-        const result = await move(req.player, req.game, { x: req.params.x, y: req.params.y });
+    try {
+        targetPlayer = await Player.findById(data.targetId);
+    } catch (e) {
+        return { status: 500, message: e};
+    }
+}
+
+/**
+ *
+ * @param {Object} game
+ * @param {string} playerId
+ * @param {string} action
+ * @param {Object} data
+ * @param {('actions'|'actionLog')} type
+ * @return {Promise<boolean>}
+ */
+async function logAction(game, playerId, action, data, type) {
+    game[type].push({
+        action: 'move',
+        player_id: playerId,
+        ...data
+    })
+
+    try {
+        await game.save();
+
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+async function moveRequest(req, res) {
+    if (!req.game.doActionQueue) {
+        const result = await move(req.game, req.player,{ position: req.params });
+
+        await logAction(req.game, req.player._id, 'move', req.body, 'actionLog')
 
         res.status(result.status).send(result.message)
     } else {
-        req.game.actions.append({
-            action: 'move',
-            position: req.body
-        })
+        const success = await logAction(req.game, req.player._id,  'move', req.body, 'actions')
 
-        try {
-            await req.game.save();
-
+        if (success) {
             res.status(200).send('ok')
-        } catch (e) {
+        } else {
+            res.status(500).send
+        }
+    }
+}
+
+async function attackRequest(req, res) {
+    if (!req.game.doActionQueue) {
+        const result = await attack(req.game, req.player, { targetId: req.params.targetId })
+
+        await logAction(req.game, req.player._id, 'attack', { targetId: req.params.targetId }, 'actionLog')
+
+        res.status(result.status).send(result.message)
+    } else {
+        const success = await logAction(req.game, req.player._id, 'attack', { targetId: req.params.targetId }, 'actionLog')
+
+        if (success) {
+            res.status(200).send('ok')
+        } else {
+            res.status(500).send()
+        }
+    }
+
+}
+
+async function upgradeRequest (req, res) {
+    if (!req.game.doActionQueue) {
+        const result = await upgrade(req.game, req.player, { upgrade: req.params.upgrade });
+
+        await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade }, 'actionLog')
+
+        res.status(result.status).send(result.message)
+    } else {
+        const success = await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade }, 'actionLog')
+
+        if (success) {
+            res.status(200).send('ok')
+        } else {
             res.status(500).send(e)
         }
     }
 }
 
-module.exports.attackRequest = async (req, res) => {
+async function giveRequest(req, res) {
     if (!req.game.doActionQueue) {
-        const result = await attack(req.player, req.params.targetId)
+        const result = await give(req.game, req.player, { targetId: req.params.targetId });
+
+        await logAction(req.game, 'give', req.player._id, { targetId: req.params.targetId }, 'actionLog')
 
         res.status(result.status).send(result.message)
     } else {
-        req.game.actions.append({
-            action: 'attack',
-            targetId: req.params.targetId
-        })
-        try {
+        const success = await logAction(req.game, req.player._id, 'give', { targetId: req.params.targetId }, 'actionLog')
+
+        if (success) {
             await req.game.save();
 
             res.status(200).send('ok')
-        } catch (e) {
-            res.status(500).send(e)
-        }
-    }
-
-}
-
-module.exports.upgradeRequest = async (req, res) => {
-    if (!req.game.doActionQueue) {
-        const result = await upgrade(req.player, req.params.upgrade);
-
-        res.status(result.status).send(result.message)
-    } else {
-        req.game.actions.append({
-            action: 'upgrade',
-            upgrade: req.params.upgrade
-        })
-        try {
-            await req.game.save();
-
-            res.status(200).send('ok')
-        } catch (e) {
-            res.status(500).send(e)
+        } else {
+            res.status(500).send()
         }
     }
 }
 
-module.exports.giveRequest = async (req, res) => {
-    if (!req.game.doActionQueue) {
-        const result = await upgrade(req.player, req.params.targetId);
-
-        res.status(result.status).send(result.message)
-    } else {
-        req.game.actions.append({
-            action: 'give',
-            targetId: req.params.targetId
-        })
-
-        try {
-            await req.game.save();
-
-            res.status(200).send('ok')
-        } catch (e) {
-            res.status(500).send(e)
-        }
-    }
+module.exports = {
+    move,
+    attack,
+    upgrade,
+    give,
+    moveRequest,
+    attackRequest,
+    upgradeRequest,
+    giveRequest
 }

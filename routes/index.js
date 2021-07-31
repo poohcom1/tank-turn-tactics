@@ -24,30 +24,15 @@ router.get('/login', (req, res) => {
 
 // Join/create
 router.get('/create-game', isLoggedIn, (req, res) => {
-    res.render('pages/game/create', { username: req.user.username } )
+    res.render('pages/game/create', { name: req.user.email } )
 })
-
-router.get('/game-created/:gameId', isLoggedIn,(req, res) => {
-    const { gameId } = req.params;
-
-    res.send(`<h1>Game Created!</h1><p>Id: ${gameId}</p>`)
-})
-
 
 router.get('/join/:gameId?', isLoggedIn, (req, res, next) => {
     const { gameId } = req.params;
 
-    // Game.findById(gameId, (err, game) => {
-    //     if (err) next(err);
-    //
-    //     if (!game) throw new Error("Game not found")
-    //
-    //
-    // })
-
     res.render('pages/game/join', {
         gameName: "",
-        username: req.user.username,
+        name: req.user.email,
         usePassphrase: "",
         game_id: gameId ?? ''
     })
