@@ -2,7 +2,11 @@
     --primary: #342e2e;
     --secondary: #a4a29b;
     --secondary-glow: #eeeae9;
-    --link: #f8c33d;
+
+    --contrast: #f8c33d;
+
+    --card-background: rgba(5, 5, 5, 0.45);
+
     --error: #e03f3f;
 
     --input-text: white;
@@ -20,6 +24,7 @@ body {
 }
 
 h1, h2, h3 {
+    margin: 5px;
     font-family: 'Kanit', sans-serif;
 }
 
@@ -31,8 +36,9 @@ input:-webkit-autofill {
 a {
     display: block;
     text-decoration: none;
-    color: var(--link);
+    color: var(--contrast);
     transition: all 0.2s;
+    margin: 5px;
 }
 
 a:hover {
@@ -40,8 +46,20 @@ a:hover {
     text-shadow: var(--secondary) 0 0 5px;
 }
 
-table, tr, th, td {
-    border: black solid 1px;
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    border-style: hidden;
+
+    font-size: 20px;
+}
+
+table td, table th {
+    border: 1px solid var(--secondary);
+}
+
+th, td {
+    padding: 5px;
 }
 
 
@@ -67,8 +85,8 @@ button {
 }
 
 button:hover {
-    color: var(--link);
-    border: var(--link) solid 1px;
+    color: var(--contrast);
+    border: var(--contrast) solid 1px;
 }
 
 button:focus {
@@ -101,3 +119,13 @@ input:focus {
     color: var(--error)
 }
 
+.card {
+    width: fit-content;
+    padding: 15px;
+
+
+    border-radius: 15px;
+
+    box-shadow: gray 0 0 15px;
+    background-color: var(--card-background);
+}
