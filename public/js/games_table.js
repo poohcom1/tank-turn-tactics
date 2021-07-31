@@ -59,8 +59,10 @@ function generateAdminTable(tableQuery) {
             const tableHeaders = ['Game', 'Players', 'State', 'Creator ID', 'Created', 'Updated', 'Remove']
 
             const tableRows = games.map(game => {
-                const gameLink = document.createElement("a");
-                gameLink.href = "/play?game=" + game._id
+                const gameLink = document.createElement("button");
+                gameLink.onclick = () => {
+                    console.log(game)
+                }
                 gameLink.innerHTML = game.name;
 
                 const row = [

@@ -1,18 +1,15 @@
 const mongoose = require('mongoose')
 
 const ActionSchema = new mongoose.Schema({
-    player_id: {
-        type: mongoose.Types.ObjectId,
-        required: true
+    action: { type: String, enum: ['attack', 'move', 'upgrade', 'give'], required: true },
+    player: { type: mongoose.Types.ObjectId, ref: "Player", required: true},
+
+    target_id: mongoose.Types.ObjectId,
+    position: {
+        x: Number,
+        y: Number
     },
-    actionPoints: {
-        type: Number,
-        default: 1
-    }
+    upgrade: { type: String, enum: ['range', 'sight', 'health'] }
 }, { timestamps: true })
 
-const actionArray = ActionSchema.path('actions')
-
-const MoveSchema = actionArray.discriminators('Move', new mongoose.Schema({
-
-}))
+module.exports = ActionSchema;

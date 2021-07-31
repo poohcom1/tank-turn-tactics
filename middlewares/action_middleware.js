@@ -22,7 +22,7 @@ module.exports.checkPlayer = async function (req, res, next) {
 }
 
 /**
- * Appends the game to the request, and redirects action based on game doActionQueue
+ * Appends the game to the request
  * @param req
  * @param res
  * @param next
@@ -30,13 +30,7 @@ module.exports.checkPlayer = async function (req, res, next) {
 module.exports.checkGame = async function (req, res, next) {
     const gameId = req.params.gameId;
 
-    const game = await Game.findById(gameId)
+    req.game = await Game.findById(gameId);
 
-    req.game = game;
-
-    if (game.doActionQueue) {
-        res.redirect(req.baseUrl + req.path + '/queue')
-    } else {
-        next()
-    }
+    next();
 }

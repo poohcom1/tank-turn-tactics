@@ -1,4 +1,5 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
+const ActionSchema = require('./ActionSchema.js')
 
 const gameSchema = new mongoose.Schema({
     // Properties
@@ -24,7 +25,9 @@ const gameSchema = new mongoose.Schema({
     startedAt: { type: Date },
 
     // Game options
-    actionsPerDay: { type: Number, default: 1 },
+    turnTime: { type: Number, default: 12 },
+    turnTimePassed: { type: Number, default: 0},
+
     actionsPerInterval: { type: Number, default: 1 },
     tieCount: { type: Number, default: 2 },
 
@@ -36,7 +39,10 @@ const gameSchema = new mongoose.Schema({
 
     doFogOfWar: { type: Boolean, default: true },
     doBounty: { type: Boolean, default: true },
-    doEscort: { type: Boolean, default: false }
+    doEscort: { type: Boolean, default: false },
+
+    actions: [ActionSchema],
+    actionLog: [ActionSchema]
 }, { timestamps: true });
 
 const Game = mongoose.model("games", gameSchema)

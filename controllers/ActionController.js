@@ -7,77 +7,179 @@ function checkRange(position, target, range) {
     return Math.abs(position.x - target.x) <= range && Math.abs(position.y - target.y) <= range
 }
 
-module.exports.move = async (req, res) => {
-    if (req.body.x >= 0
-        && req.body.y >= 0
-        && req.body.x <= req.game.size.width
-        && req.body.y <= req.game.size.height
-        && checkRange(req.player.position, req.body, req.player.range)) {
+function checkGrid(position, game) {
+    return position.x >= 0 && position.y >= 0 && position.x < game.size.width && position.y < game.size.height
+}
 
+/**
+ *
+ * @param player
+ * @param game
+ * @param position
+ * @return {Promise<{message: string, status: number}>}
+ */
+async function move(player, game, position) {
+    if (checkGrid(position, game) && checkRange(player.position, position, player.range)) {
         try {
-            await req.player.updateOne({
+            await player.updateOne({
                 position: {
-                    x: req.body.x,
-                    y: req.body.y
+                    x: position.x,
+                    y: position.y
                 },
-                actions: req.player.actions-1
+                actions: player.actions-1
             })
-
-            res.status(200).send()
         } catch (e) {
-            console.log("[Action]", e)
-            res.status(500).send(e)
+            return { status: 500, message: e }
         }
+
+
+        return { status: 200, message: 'ok' };
     } else {
-        console.log("[Action] Out of bounds")
-        res.status(500).send("Out of bounds")
+        return { status: 403, message: 'Out of bounds' };
     }
 }
 
-module.exports.attack = async (req, res) => {
-    const targetId = req.params.targetId;
+/**
+ *
+ * @param player
+ * @param targetId
+ * @return {Promise<{message: string, status: number}>}
+ */
+async function attack(player, targetId) {
+    let targetPlayer;
 
-    let targetPlayer = await Player.findById(targetId);
+    try {
+        targetPlayer = await Player.findById(targetId);
+    } catch (e) {
+        return { status: 500, message: e};
+    }
 
-    if (!checkRange(req.player.position, targetPlayer.position, req.player.range)) {
-        return res.status(401).send()
+    if (!checkRange(player.position, targetPlayer.position, player.range)) {
+        return { status: 403, message: 'Out of bounds'};
     }
 
     try {
         if (targetPlayer.health > 0) {
             targetPlayer.health -= 1;
-            await targetPlayer.updateOne(targetPlayer);
+            await targetPlayer.save();
         }
 
-        await req.player.updateOne({
-            actions: req.player.actions-1
-        })
+        player.actions--;
+        await player.save()
 
-        console.log(targetPlayer.name, "is now at", targetPlayer.health, "hp")
-
-        res.status(200).send()
+        return { status: 200, message: 'ok'};
     } catch (e) {
         await targetPlayer.updateOne(targetPlayer)
+        await player.updateOne(player)
 
-        await req.player.updateOne(req.player)
+        return { status: 500, message: e};
     }
 }
 
-module.exports.upgrade = async (req, res) => {
-    const UPGRADES = ["range", "sight"]
+/**
+ *
+ * @param player
+ * @param upgrade
+ * @return {Promise<{message: string, status: number}>}
+ */
+async function upgrade(player, upgrade) {
+    const UPGRADES = ["range", "sight", "health"]
 
-    if (!UPGRADES.includes(req.params.upgrade)) {
-        res.status(401)
-        return;
+    if (!UPGRADES.includes(upgrade)) {
+        return { status: 403, message: 'Unknown upgrade'}
     }
 
     try {
-        req.player[req.params.upgrade]++;
+        player[upgrade]++;
 
-        await req.player.updateOne(req.player)
+        await player.save()
 
-        res.status(200).send();
+        return { status: 200, message: 'ok'}
     } catch (e) {
-        res.status(501).send(e);
+        return { status: 501, message: e}
+    }
+}
+
+module.exports.moveRequest = async (req, res) => {
+    if (!req.game.doActionQueue) {
+
+        const result = await move(req.player, req.game, { x: req.params.x, y: req.params.y });
+
+        res.status(result.status).send(result.message)
+    } else {
+        req.game.actions.append({
+            action: 'move',
+            position: req.body
+        })
+
+        try {
+            await req.game.save();
+
+            res.status(200).send('ok')
+        } catch (e) {
+            res.status(500).send(e)
+        }
+    }
+}
+
+module.exports.attackRequest = async (req, res) => {
+    if (!req.game.doActionQueue) {
+        const result = await attack(req.player, req.params.targetId)
+
+        res.status(result.status).send(result.message)
+    } else {
+        req.game.actions.append({
+            action: 'attack',
+            targetId: req.params.targetId
+        })
+        try {
+            await req.game.save();
+
+            res.status(200).send('ok')
+        } catch (e) {
+            res.status(500).send(e)
+        }
+    }
+
+}
+
+module.exports.upgradeRequest = async (req, res) => {
+    if (!req.game.doActionQueue) {
+        const result = await upgrade(req.player, req.params.upgrade);
+
+        res.status(result.status).send(result.message)
+    } else {
+        req.game.actions.append({
+            action: 'upgrade',
+            upgrade: req.params.upgrade
+        })
+        try {
+            await req.game.save();
+
+            res.status(200).send('ok')
+        } catch (e) {
+            res.status(500).send(e)
+        }
+    }
+}
+
+module.exports.giveRequest = async (req, res) => {
+    if (!req.game.doActionQueue) {
+        const result = await upgrade(req.player, req.params.targetId);
+
+        res.status(result.status).send(result.message)
+    } else {
+        req.game.actions.append({
+            action: 'give',
+            targetId: req.params.targetId
+        })
+
+        try {
+            await req.game.save();
+
+            res.status(200).send('ok')
+        } catch (e) {
+            res.status(500).send(e)
+        }
     }
 }
