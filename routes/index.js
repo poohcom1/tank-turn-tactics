@@ -1,7 +1,6 @@
 const router = require('express').Router()
 const { isLoggedIn, isAdmin } = require('../middlewares/auth_middleware.js')
 const Game = require('../models/GameModel.js')
-const { checkGame, checkPlayer } = require("../middlewares/action_middleware.js");
 
 // Pages
 router.get('/', (req, res) => {

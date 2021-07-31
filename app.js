@@ -63,9 +63,9 @@ app.on('ready', () => {
     /* App started here */
     const server = app.listen(process.env.PORT, () => {
 
-        const address = process.env.NODE_ENV === 'development' ? `http://localhost:${ process.env.PORT }` : server.address().address;
+        const address = process.env.NODE_ENV === 'development' ? `http://localhost:${ process.env.PORT }` : `port ${ process.env.PORT }`;
 
-        console.log(`\x1b[36m[app] Server running on ${ address } in \x1b[1m${ process.env.NODE_ENV }\x1b[0m \x1b[36mmode\x1b[0m`)
+        console.log(`[app] Server running on ${ address } in ${ process.env.NODE_ENV } mode`)
     });
 })
 

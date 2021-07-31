@@ -21,12 +21,12 @@ const dbOptions = {
 function connectToDB(app, timeout) {
     mongoose.connect(dbUri, dbOptions)
         .then(m => {
-            console.log(`\x1b[36m[mongodb] Connected to database \x1b[1m${process.env.DB_NAME}\x1b[0m`);
+            console.log(`[mongodb] Connected to database ${process.env.DB_NAME}`);
 
             app.emit('ready')
         })
         .catch(err => {
-            console.error('\x1b[31m[mongodb] ' + err + ', retrying in ' + timeout/1000 + ' seconds\x1b[0m')
+            console.error('[mongodb] ' + err + ', retrying in ' + timeout/1000 + ' seconds')
             setTimeout(() => connectToDB(app, timeout), timeout)
         });
 }
