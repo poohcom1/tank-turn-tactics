@@ -18,8 +18,10 @@ const mainPlayerData = {
 
 const defaultGameImmediate = {
     name: "Test game",
-    size: { width: 10, height: 10},
-    doActionQueue: false
+    size: { width: 10, height: 10 },
+    doActionQueue: false,
+    actions: [],
+    actionLog: []
 }
 
 describe("ActionController: Immediate", () => {
@@ -41,7 +43,7 @@ describe("ActionController: Immediate", () => {
                 y: mainPlayerData.position.y
             }
 
-            const { res } =  getMockRes();
+            const { res } = getMockRes();
 
             await moveRequest(req, res);
 
@@ -49,15 +51,13 @@ describe("ActionController: Immediate", () => {
         })
 
         it("prevent movement to negative coords", async () => {
-            req = {
-                params: {
-                    x: -1,
-                    y: mainPlayerData.position.y
-                },
-                game: defaultGameImmediate
+            req.params = {
+                x: -1,
+                y: mainPlayerData.position.y
             }
+            req.game = defaultGameImmediate
 
-            const { res } =  getMockRes();
+            const { res } = getMockRes();
 
             await moveRequest(req, res);
 
@@ -78,7 +78,7 @@ describe("ActionController: Immediate", () => {
                 game: defaultGameImmediate
             }
 
-            const { res } =  getMockRes();
+            const { res } = getMockRes();
 
             await moveRequest({ ...req, player: playerOnGridEdge }, res);
 
@@ -91,8 +91,10 @@ describe("ActionController: Immediate", () => {
         let targetPlayer;
         let req;
         beforeEach(async () => {
-            targetPlayer = await new Player({ name: "test", position: { x: 0, y: 1 },user_id: mongoose.Types.ObjectId(),
-                game_id: mongoose.Types.ObjectId() }).save()
+            targetPlayer = await new Player({
+                name: "test", position: { x: 0, y: 1 }, user_id: mongoose.Types.ObjectId(),
+                game_id: mongoose.Types.ObjectId()
+            }).save()
 
             mainPlayer = await new Player(mainPlayerData).save();
 
@@ -129,7 +131,7 @@ describe("ActionController: Immediate", () => {
 
 const defaultGameQueued = {
     name: "Test game",
-    size: { width: 10, height: 10},
+    size: { width: 10, height: 10 },
     doActionQueue: true,
     actions: []
 }

@@ -114,7 +114,7 @@
                         formData.append('x', x)
                         formData.append('y', y)
 
-                        fetch(`/action/${gameId}/move`, {
+                        fetch(`/action/${gameId}/move/${x}/${y}`, {
                             method: 'POST',
                             headers: {
                                 'Accept': 'application/json',

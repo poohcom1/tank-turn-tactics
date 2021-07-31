@@ -112,6 +112,9 @@ input:focus {
     border-bottom: 1px solid var(--secondary-glow);
 }
 
+input, select {
+    margin-right: 0;
+}
 
 /* Templates */
 
