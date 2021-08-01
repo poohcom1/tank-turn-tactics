@@ -1,7 +1,7 @@
 const DBHandler = require('./db_handler');
 const mongoose = require('mongoose')
 const { getMockReq, getMockRes } = require('@jest-mock/express')
-const { getUser } = require('../controllers/UserController.js')
+const { AuthController } = require('../controllers/AuthController.js')
 
 DBHandler.setup();
 
@@ -16,7 +16,7 @@ describe("GameController", () => {
 
             const { res } = getMockRes()
 
-            await getUser(req, res);
+            await AuthController(req, res);
 
             expect(res.send).toHaveBeenCalledWith(req.user.id)
         })

@@ -106,6 +106,14 @@ async function give(game, player, data) {
 
     try {
         targetPlayer = await Player.findById(data.targetId);
+
+        player.actions -= parseInt(data.count);
+        targetPlayer.actions += parseInt(data.count);
+
+        await player.save();
+        await targetPlayer.save();
+
+        return { status: 200, message: 'ok'}
     } catch (e) {
         return { status: 500, message: e};
     }
@@ -193,7 +201,7 @@ async function upgradeRequest (req, res) {
 
 async function giveRequest(req, res) {
     if (!req.game.doActionQueue) {
-        const result = await give(req.game, req.player, { targetId: req.params.targetId });
+        const result = await give(req.game, req.player, { targetId: req.params.targetId, count: req.params.count });
 
         await logAction(req.game, 'give', req.player._id, { targetId: req.params.targetId }, 'actionLog')
 

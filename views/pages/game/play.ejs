@@ -1,187 +1,269 @@
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <link href="/css/game.css" rel="stylesheet" type="text/css">
-    <title>Title</title>
-</head>
+<%- include('../../partials/head.html') %>
+
 <body>
 <h1>Game</h1>
-    <div id="gameGrid"></div>
-    <div id="stats">
-        <h3 id="name"></h3>
-        <p id="actions"></p>
-        <p id="health"></p>
-        <p id="range"></p>
-    </div>
+<div id="gameGrid"></div>
+<div id="stats">
+    <button id="attack">Attack</button>
+    <button id="give">Give</button>
+    <h3 id="name"></h3>
+    <h4 id="actions"></h4>
+    <span id="health"></span>
+    <button id="healthUpgrade" style="display: inline-block; margin-left: 5px">Upgrade</button>
+    <br>
+    <span id="range"></span>
+    <button id="rangeUpgrade" style="display: inline-block; margin-left: 5px">Upgrade</button>
+</div>
 
 
-    <script>
-    (async () => {
-        let playerId = 0;
-        let gameId
+<script>
+    let playerId = 0;
+    let gameId
 
-        let gameObject;
-        let players;
-        let userPlayer;
+    let gameObject;
+    let players;
+    let userPlayer;
 
-        async function fetchData() {
-            const urlParams = new URLSearchParams(window.location.search);
-            gameId = urlParams.get('game')
+    let selectedPlayer;
+    let selectedId;
 
-            // Get data
-            const gameRes = await fetch(`/game/${gameId}`, { method: 'GET' });
-            const gameResponse = await gameRes.json();
+    async function fetchData() {
+        const urlParams = new URLSearchParams(window.location.search);
+        gameId = urlParams.get('game')
 
-            userPlayer = await (await fetch(`/game/${gameId}/player`, { method: 'GET' })).json()
-            playerId = userPlayer.user_id
+        // Get data
+        const gameRes = await fetch(`/game/${ gameId }`, { method: 'GET' });
+        const gameResponse = await gameRes.json();
 
-            gameObject = gameResponse.game;
-            players = gameResponse.players;
+        userPlayer = await (await fetch(`/game/${ gameId }/player`, { method: 'GET' })).json()
+        playerId = userPlayer.user_id
 
-            dispatchEvent(new CustomEvent('data-updated', { game: gameObject, player: userPlayer, players: players }))
+        gameObject = gameResponse.game;
+        players = gameResponse.players;
+
+        dispatchEvent(new CustomEvent('data-updated', { game: gameObject, player: userPlayer, players: players }))
+    }
+
+    function setStats(player) {
+
+        if (player.actions <= 0) {
+            document.querySelector('#healthUpgrade').disabled = true;
+            document.querySelector('#rangeUpgrade').disabled = true;
+            document.querySelector('#attack').disabled = true;
+            document.querySelector('#give').disabled = true;
+        } else {
+            document.querySelector('#healthUpgrade').disabled = false;
+            document.querySelector('#rangeUpgrade').disabled = false;
+            document.querySelector('#attack').disabled = false;
+            document.querySelector('#give').disabled = false;
         }
 
-        function setStats(player) {
-            document.querySelector('#stats #name').innerHTML = player.name + ":";
-            document.querySelector('#stats #actions').innerHTML = "Action points: " + player.actions;
-            document.querySelector('#stats #health').innerHTML = "Health: " + player.health;
-            document.querySelector('#stats #range').innerHTML = "Range: " + player.range;
+        if (player._id !== userPlayer._id) {
+            document.querySelector('#attack').addEventListener("click", () => {
+                // Attack
+                fetch(`/action/${ gameId }/attack/${ player._id }`, { method: 'POST' })
+                    .then(fetchData)
+                    .catch(e => console.log(e))
+            })
+
+            document.querySelector('#give').addEventListener("click", () => {
+                // Attack
+                fetch(`/action/${ gameId }/give/${ player._id }/actions/1`, { method: 'POST' })
+                    .then(fetchData)
+                    .catch(e => console.log(e))
+            })
+        } else {
+            document.querySelector('#attack').disabled = true;
+            document.querySelector('#give').disabled = true;
         }
 
-        function draw() {
-            const size = gameObject.size;
+        document.querySelector('#stats #name').innerHTML = player.name + ":";
+        document.querySelector('#stats #actions').innerHTML = "Action points: " + player.actions;
+        document.querySelector('#stats #health').innerHTML = "Health: " + player.health;
+        document.querySelector('#stats #range').innerHTML = "Range: " + player.range;
 
-            const grid = [];
+        document.querySelector('#healthUpgrade').onclick = () => {
+            fetch(`/action/${ gameId }/upgrade/health`, { method: 'POST' }).then(fetchData)
+        }
 
-            for (let x = 0; x < size.width; x++) {
-                grid.push([])
+        document.querySelector('#rangeUpgrade').onclick = () => {
+            fetch(`/action/${ gameId }/upgrade/range`, { method: 'POST' }).then(fetchData)
+        }
+    }
 
-                for (let y = 0; y < size.height; y++) {
-                    const playerAtPosition = players.find(player => player.position.x === x && player.position.y === y)
+    function draw() {
+        const size = gameObject.size;
 
-                    if (playerAtPosition) {
-                        grid[x].push(playerAtPosition)
-                    } else {
-                        grid[x].push(false)
-                    }
+        const grid = [];
+
+        for (let x = 0; x < size.width; x++) {
+            grid.push([])
+
+            for (let y = 0; y < size.height; y++) {
+                const playerAtPosition = players.find(player => player.position.x === x && player.position.y === y)
+
+                if (playerAtPosition) {
+                    grid[x].push(playerAtPosition)
+                } else {
+                    grid[x].push(false)
                 }
             }
-
-            drawGrid(document.querySelector("#gameGrid"), size.width, size.height, 50, 50, grid);
         }
 
+        drawGrid(document.querySelector("#gameGrid"), size.width, size.height, 50, 50, grid);
+    }
 
-        addEventListener('data-updated', async () => {
-            draw();
-            setStats(userPlayer)
+
+    /**
+     *
+     * @param {HTMLElement} element
+     * @param {number} width
+     * @param {number} height
+     * @param {number} xSize
+     * @param {number} ySize
+     * @param {Array} gridArray
+     */
+    function drawGrid(element, width, height, xSize, ySize, gridArray) {
+        const gridElement = document.createElement("div");
+
+        element.innerHTML = ''
+        element.appendChild(gridElement)
+
+        gridElement.id = "main";
+        gridElement.className = "container";
+
+        for (let row = 0; row < width; ++row) {
+            let rowElement = gridElement.appendChild(
+                document.createElement("div")
+            );
+            rowElement.className = "row";
+            rowElement.id = "row" + row;
+            rowElement.style.height = `${ ySize + 2 }px`;
+
+            for (let col = 0; col < height; ++col) {
+                let box = rowElement.appendChild(document.createElement("canvas"));
+                box.className = "box";
+                box.style.width = `${ xSize }px`;
+                box.style.height = `${ ySize }px`;
+
+                box.position = { x: col, y: row };
+
+                boxInit(box, gridArray[row][col], row, col)
+            }
+        }
+    }
+
+    function boxInit(box, player, x, y) {
+        if (player) box.addEventListener("click", () => {
+            console.log("Selected player " + player.name + (player.user_id === userPlayer.user_id ? " (you)" : ''))
+            selectedPlayer = player;
+            selectedId = player._id;
+            setStats(player)
+            draw()
         })
 
-        await fetchData();
+        if (player && player.user_id === userPlayer.user_id && player.health > 0) {
+            colorCanvas(box, "#ce3cff")
+        } else if (player && player.health > 0) {
+            colorCanvas(box, "rgb(255,0,0)")
+        } else {
+            // Move
+            if ((Math.abs(x - userPlayer.position.x) < 2 && Math.abs(y - userPlayer.position.y) < 2)) {
+                colorCanvas(box, "rgba(75,222,255,0.16)")
 
-        /**
-         *
-         * @param {HTMLElement} element
-         * @param {number} width
-         * @param {number} height
-         * @param {number} xSize
-         * @param {number} ySize
-         * @param {Array} gridArray
-         */
-        function drawGrid(element, width, height, xSize, ySize, gridArray) {
-            const gridElement = document.createElement("div");
-
-            element.innerHTML = ''
-            element.appendChild(gridElement)
-
-            gridElement.id = "main";
-            gridElement.className = "container";
-
-            for (let row = 0; row < width; ++row) {
-                let rowElement = gridElement.appendChild(
-                    document.createElement("div")
-                );
-                rowElement.className = "row";
-                rowElement.id = "row" + row;
-                rowElement.style.height = `${ySize + 2}px`;
-
-                for (let col = 0; col < height; ++col) {
-                    let box = rowElement.appendChild(document.createElement("canvas"));
-                    box.className = "box";
-                    box.style.width = `${xSize}px`;
-                    box.style.height = `${ySize}px`;
-
-                    box.position = { x: col, y: row };
-
-                    boxInit(box, gridArray[row][col], row, col)
-                }
-            }
-        }
-
-        function boxInit(box, player, x, y) {
-            if (player) box.addEventListener("click", () => setStats(player))
-
-            if (player && player.user_id === playerId && player.health > 0) {
-                colorCanvas(box, "#8813af")
-            } else if (player && player.health > 0) {
-                colorCanvas(box, "rgba(168,29,29,0.62)")
                 box.addEventListener("click", () => {
-                    // Attack
+                    if (userPlayer.actions <= 0) {
+                        alert("You have no action points left!");
+                        return;
+                    }
+
                     let formData = new FormData();
                     formData.append('x', x)
                     formData.append('y', y)
 
-                    fetch(`/action/${ gameId }/attack/${ player._id }`, {
+                    fetch(`/action/${ gameId }/move/${ x }/${ y }`, {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
-                        }
+                        },
+                        body: JSON.stringify({ x: x, y: y })
                     })
-                        .then(res => draw())
+                        .then(fetchData)
                         .catch(e => console.log(e))
                 })
-            } else {
-                // Move
-                if ((Math.abs(x - userPlayer.position.x) < 2 && Math.abs(y - userPlayer.position.y) < 2)) {
-                    colorCanvas(box, "rgba(35,147,55,0.35)")
+            } else if (Math.abs(x - selectedPlayer.position.x) <= selectedPlayer.range && Math.abs(y - selectedPlayer.position.y) <= selectedPlayer.range) {
+                colorCanvas(box, "rgba(255,155,84,0.11)")
+            }
+        }
+    }
 
-                    box.addEventListener("click", () => {
-                        let formData = new FormData();
-                        formData.append('x', x)
-                        formData.append('y', y)
+    /**
+     *
+     * @param {HTMLCanvasElement} canvasElement
+     * @param {string} color
+     */
+    function colorCanvas(canvasElement, color) {
+        const width = canvasElement.width;
+        const height = canvasElement.height;
 
-                        fetch(`/action/${ gameId }/move/${ x }/${ y }`, {
-                            method: 'POST',
-                            headers: {
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ x: x, y: y })
-                        })
-                            .then(res => fetchData())
-                            .catch(e => console.log(e))
-                    })
-                } else if (Math.abs(x - userPlayer.position.x) < userPlayer.range && Math.abs(y - userPlayer.position.y) < userPlayer.range) {
-                    colorCanvas(box, "rgb(222,192,117)")
-                }
+        const ctx = canvasElement.getContext('2d');
+        ctx.fillStyle = color
+        ctx.fillRect(0, 0, width, height)
+    }
+
+    addEventListener('data-updated', async () => {
+        console.log("Data updated!")
+        if (selectedPlayer === undefined) {
+            console.log("Init selected player")
+            selectedPlayer = userPlayer
+            selectedId = userPlayer._id;
+        }
+
+        if (userPlayer._id === selectedPlayer._id) {
+            selectedPlayer = userPlayer;
+        }
+
+
+        for (const player of players) {
+            if (player._id === selectedPlayer._id) {
+                selectedPlayer = player;
+                break;
             }
         }
 
-        /**
-         *
-         * @param {HTMLCanvasElement} canvasElement
-         * @param {string} color
-         */
-        function colorCanvas(canvasElement, color) {
-            const width = canvasElement.width;
-            const height = canvasElement.height;
+        if (selectedPlayer.health <= 0) selectedPlayer = userPlayer;
 
-            const ctx = canvasElement.getContext('2d');
-            ctx.fillStyle = color
-            ctx.fillRect(0, 0, width, height)
-        }
-    })();
+        draw();
+        setStats(selectedPlayer)
+    })
+
+    fetchData()
+
 </script>
+
+<style>
+    .box {
+        border: 1px dashed #737373;
+        margin: 0;
+    }
+
+    .row {
+        margin: 0
+    }
+
+    #health {
+        color: green;
+    }
+
+    #range {
+        color: orange;
+    }
+
+    button:disabled {
+        text-decoration: line-through;
+    }
+</style>
 
 </body>
 </html>
