@@ -130,7 +130,7 @@
         element.appendChild(gridElement)
 
         gridElement.id = "main";
-        gridElement.className = "container";
+        gridElement.className = "gridContainer";
 
         for (let row = 0; row < width; ++row) {
             let rowElement = gridElement.appendChild(
@@ -242,6 +242,9 @@
 
 </script>
 
+</body>
+
+
 <style>
     .box {
         border: 1px dashed #737373;
@@ -265,5 +268,4 @@
     }
 </style>
 
-</body>
-</html>
+<%- include('../../partials/footer.html') %>
