@@ -30,5 +30,7 @@ const playerSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+playerSchema.index({ 'user_id': 1, 'game_id':1 }, { unique: true})
+
 const Player = mongoose.model("players", playerSchema);
 module.exports = Player;
