@@ -6,7 +6,6 @@
             <script>
                 const urlParams = new URLSearchParams(window.location.search);
                 const error = urlParams.get('error')
-                console.log(error)
                 if (error) document.querySelector("p.error").innerHTML = "Invalid username or password!"
             </script>
 

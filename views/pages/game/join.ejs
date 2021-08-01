@@ -4,6 +4,8 @@
     <h1>Join a game</h1>
 
     <form action="/game/player" method="POST">
+        <p class="error"></p>
+
         <label for="gameId">Game code:</label>
         <input id="gameId" value="<%= game_id %>" name="gameId"/>
 
@@ -17,6 +19,18 @@
         <button type="submit">Join</button>
     </form>
 
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        let error = urlParams.get('error')
+        if (error) {
+            switch (error) {
+                case 'nonexistent': error = "Game does not exist!"; break;
+                case 'gameStarted': error = "Game has already started!"; break;
+                case 'server': error = "Server error! Please try again in a few minutes!"; break;
+            }
+        }
+        document.querySelector('.error').innerHTML = error;
+    </script>
 </body>
 
 <%- include('../../partials/footer.html') %>

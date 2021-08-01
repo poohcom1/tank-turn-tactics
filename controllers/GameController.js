@@ -55,8 +55,16 @@ module.exports.joinGame = async function (req, res) {
 
     const responseJson = req.body;
 
-    if ((await Game.findById(responseJson.gameId)).hasStarted) {
-        res.status(500).redirect('/join')
+    let game;
+
+    try {
+        game = await Game.findById(responseJson.gameId)
+    } catch (e) {
+        res.redirect('/join?error=nonexistent')
+    }
+
+    if (game.hasStarted) {
+        res.redirect('/join?error=gameStarted')
     }
 
     try {
@@ -69,7 +77,7 @@ module.exports.joinGame = async function (req, res) {
         res.redirect('/play?game=' + responseJson.gameId)
     } catch (e) {
         console.log(e)
-        res.redirect('/join')
+        res.redirect('/join?error=server')
     }
 }
 
