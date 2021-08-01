@@ -6,28 +6,89 @@
 
     --contrast: #f8c33d;
 
-    --card-background: rgba(5, 5, 5, 0.45);
+    --card-background: rgba(5, 5, 5, 0.73);
 
     --error: #e03f3f;
 
-    --input-text: white;
+    --input-text: #dedede;
     --input-placeholder: #868686;
 
     --main-font: 'Georama';
+}
+
+@font-face {
+    font-family: 'Hollow';
+    src: url("../assets/fonts/Hollow-Regular.ttf")
+}
+
+@font-face {
+    font-family: 'Bechtlers';
+    src: url("../assets/fonts/BechtlersRegular.ttf");
+}
+
+@font-face {
+    font-family: 'Bechtlers';
+    src: url("../assets/fonts/Bechtlers-Italic.ttf");
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Uni-Sans';
+    src: url("../assets/fonts/Uni Sans Thin.otf");
+}
+
+@font-face {
+    font-family: 'Uni-Sans';
+    src: url("../assets/fonts/Uni Sans Thin Italic.otf");
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Uni-Sans';
+    src: url("../assets/fonts/Uni Sans Heavy.otf");
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: 'Uni-Sans';
+    src: url("../assets/fonts/Uni Sans Heavy Italic.otf");
+    font-weight: bold;
+
+    font-style: italic;
 }
 
 * {
     font-family: var(--main-font), sans-serif;
 }
 
-body {
-    background-color: var(--bg);
-    color: var(--secondary)
+html {
+    padding: 0;
+    margin: 0;
+
+    height: 100%;
+
 }
 
-h1, h2, h3 {
-    margin: 5px;
-    font-family: 'Kanit', sans-serif;
+body {
+    margin: 0;
+    background-color: var(--bg);
+    background-image: url("../assets/gridwallpaper.jpg");
+    color: var(--secondary);
+    height: inherit;
+}
+
+
+h1 {
+    color: white;
+    margin: 20px 5px;
+    font-family: Hollow, sans-serif;
+    font-size: 30px;
+}
+
+h2, h3 {
+    margin-top: 15px;
+    font-family: Uni-Sans, sans-serif;
+    color: white
 }
 
 input:-webkit-autofill {
@@ -99,6 +160,18 @@ button:focus {
     color: white;
 }
 
+.formItem {
+    margin-bottom: 15px;
+    overflow: visible;
+    background: radial-gradient(black 1%, transparent);
+
+}
+
+.formItem label, select, input  {
+    font-size: 20px;
+    color: var(--input-text);
+}
+
 input {
     color: var(--input-text);
 
@@ -122,6 +195,12 @@ input, select {
     margin-right: 0;
 }
 
+select {
+    background-color: black;
+    color: white;
+    border-radius: 5%;
+}
+
 /* Templates */
 
 .error {
@@ -132,9 +211,14 @@ input, select {
     width: fit-content;
     padding: 15px;
 
-
     border-radius: 15px;
 
     box-shadow: gray 0 0 15px;
     background-color: var(--card-background);
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
 }

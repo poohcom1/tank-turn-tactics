@@ -1,42 +1,54 @@
 <%- include('../../partials/head.html') %>
 
 <body>
-    <h1>Join a game</h1>
+<div class="container">
+    <%- include('../../partials/header.html') %>
 
-    <form action="/game/player" method="POST">
-        <p class="error"></p>
+    <div>
+        <h2>Join a game</h2>
 
-        <label for="gameId">Game code:</label>
-        <input id="gameId" name="gameId"/>
+        <form action="/game/player" method="POST">
+            <p class="error"></p>
 
-        <%if (usePassphrase) { %>
-            <label for="passphrase">Passphrase</label>
-            <input id="passphrase" name="passphrase"/>
-        <% } %>
+            <label for="gameId">Game code:</label>
+            <input id="gameId" name="gameId"/>
 
-        <%- include('../../partials/player_creation_card.ejs') %>
+            <% if (usePassphrase) { %>
+                <label for="passphrase">Passphrase</label>
+                <input id="passphrase" name="passphrase"/>
+            <% } %>
 
-        <button type="submit">Join</button>
-    </form>
+            <%- include('../../partials/player_creation_card.ejs') %>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        let error = urlParams.get('error')
-        if (error) {
-            switch (error) {
-                case 'nonexistent': error = "Game does not exist!"; break;
-                case 'gameStarted': error = "Game has already started!"; break;
-                case 'server': error = "Server error! Please try again in a few minutes!"; break;
-            }
+            <button type="submit">Join</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    let error = urlParams.get('error')
+    if (error) {
+        switch (error) {
+            case 'nonexistent':
+                error = "Game does not exist!";
+                break;
+            case 'gameStarted':
+                error = "Game has already started!";
+                break;
+            case 'server':
+                error = "Server error! Please try again in a few minutes!";
+                break;
         }
-        document.querySelector('.error').innerHTML = error;
+    }
+    document.querySelector('.error').innerHTML = error;
 
-        let gameId = urlParams.get('game')
+    let gameId = urlParams.get('game')
 
-        if (gameId) {
-            document.querySelector('#gameId').value = gameId;
-        }
-    </script>
+    if (gameId) {
+        document.querySelector('#gameId').value = gameId;
+    }
+</script>
 </body>
 
 <%- include('../../partials/footer.html') %>

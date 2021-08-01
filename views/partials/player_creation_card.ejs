@@ -1,4 +1,20 @@
 
 <h2>Character Info</h2>
-<label for="displayName">Display Name: </label>
-<input id="displayName" name="displayName" placeholder="<%= name %>"/>
+<div class="formItem">
+    <label for="displayName">Display Name: </label>
+    <input id="displayName" name="displayName" placeholder="<%= name %>"/>
+</div>
+
+<script>
+    const displayName = document.querySelector("#displayName")
+
+    const nameCache = localStorage.getItem("nickname")
+
+    if (nameCache) {
+        displayName.value = nameCache
+    }
+
+    displayName.onchange = () => {
+        localStorage.setItem("nickname", displayName.value)
+    }
+</script>
