@@ -1,5 +1,6 @@
 :root {
-    --primary: #342e2e;
+    --bg: #342e2e;
+
     --secondary: #a4a29b;
     --secondary-glow: #eeeae9;
 
@@ -10,6 +11,7 @@
     --error: #e03f3f;
 
     --input-text: white;
+    --input-placeholder: #868686;
 
     --main-font: 'Georama';
 }
@@ -19,7 +21,7 @@
 }
 
 body {
-    background-color: var(--primary);
+    background-color: var(--bg);
     color: var(--secondary)
 }
 
@@ -66,7 +68,7 @@ th, td {
 /* Forms */
 
 button {
-    background-color: var(--primary);
+    background-color: var(--bg);
     border: var(--secondary) solid 1px;
     border-radius: 2px;
 
@@ -84,9 +86,13 @@ button {
     transition: all 0.1s;
 }
 
-button:hover {
+button:hover:enabled {
     color: var(--contrast);
     border: var(--contrast) solid 1px;
+}
+
+button:disabled {
+    color: var(--input-placeholder);
 }
 
 button:focus {
@@ -105,7 +111,7 @@ input {
 }
 
 input::placeholder {
-    color: var(--input-text)
+    color: var(--input-placeholder);
 }
 
 input:focus {
