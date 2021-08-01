@@ -49,6 +49,8 @@ root
 | PORT | Default port |
 | DB_URI | MongoDB Uri |
 | SESSION_SECRET | Session encryption key |
+| ADMIN_EMAIL | Admin email |
+| ADMIN_PASSWORD | Admin password |
 
 ## Game Design
 
