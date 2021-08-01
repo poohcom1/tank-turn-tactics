@@ -1,9 +1,93 @@
 <nav>
+    <div style="display: flex; align-items: center">
+        <a href=""><img src="assets/icon.png"/></a>
+        <h1>Tank_Tactics</h1>
+    </div>
+    <a href="/">Home</a>
+    <a href="/join">Join</a>
+    <a href="/create-game">Create</a>
+    <div id="logout" ><a href="/auth/logout">Logout</a></div>
 
+
+    <style>
+        @keyframes slideInFromLeft {
+            0% {
+                transform: translateX(-20%);
+                color: transparent;
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
+        nav {
+            animation: 0.75s ease-out 0s 1 slideInFromLeft;
+
+            display: flex;
+            flex-direction: column;
+
+            margin: 0;
+
+            top: 0;
+            left: 0;
+
+            width: fit-content;
+            height: 100%;
+            background: linear-gradient(90deg, black, transparent);
+        }
+
+        @keyframes iconSpin {
+            0% {
+                transform: rotate(150deg);
+                color: transparent;
+                opacity: 0;
+            }
+            100% {
+                transform: rotate(0deg);
+            }
+        }
+
+        nav img {
+            animation: 0.75s ease-out 0s 1 iconSpin;
+            height: 50px;
+            margin-left: 10px;
+            opacity: 0.6;
+        }
+
+        nav h1, nav a {
+            margin: 15px 15px 10px 10px;
+            color: inherit;
+        }
+
+        nav > a {
+            font-family: Uni-Sans, Georama, serif;
+            margin: 30px 20px;
+            font-size: 35px;
+            position: relative;
+        }
+
+        nav > a:after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            height: 3px;
+            margin: 5px 0 0;
+            opacity: 1;
+            left: 0;
+            background-color: white;
+            width: 0;
+            transition: width 0.3s;
+        }
+
+        nav > a:hover:after, a:active:after {
+            width: 100%;
+        }
+
+        #logout {
+            margin-top: auto;
+            margin-bottom: 30px;
+            justify-self: flex-end;
+        }
+    </style>
 </nav>
-
-<style>
-    nav {
-        color: var(--card-background);
-    }
-</style>

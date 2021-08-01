@@ -1,64 +1,78 @@
 <%- include('../../partials/head.html') %>
 
 <body>
-    <h1>Create Game</h1>
-    <form action="/game" method="POST">
-        <label for="name">Name: </label>
-        <input id="name" name="name" required/>
+<div class="container">
+    <%- include('../../partials/header.html') %>
+   <div>
+       <h2>Create Game</h2>
+       <form action="/game" method="POST">
+           <div class="formItem">
+           <label for="name">Name: </label>
+           <input id="name" name="name" required/>
+           </div>
 
-        <br/>
+           <div class="formItem">
 
-        <label for="size">Map size: </label>
-        <select id="size" name="size">
-            <option value="10">10x10</option>
-            <option value="20">20x20</option>
-            <option value="30">30x30</option>
-            <option value="40">40x40</option>
-        </select>
+           <label for="size">Map size: </label>
+           <select id="size" name="size">
+               <option value="10">10x10</option>
+               <option value="20">20x20</option>
+               <option value="30">30x30</option>
+               <option value="40">40x40</option>
+           </select>
+           </div>
 
-        <br/>
+           <div class="formItem">
+           <label for="turnTime">Actions Interval: </label>
+           <select id="turnTime" name="turnTime">
+               <option value=12>12 hours</option>
+               <option value=6>6 hours</option>
+               <option value=4>4 hours</option>
+               <option value=3>3 hours</option>
+               <option value=2>2 hours</option>
+               <option value=1>1 hour</option>
+           </select>
+           </div>
+
+           <div class="formItem">
+           <label for="actionsPerInterval">Action Amount:</label>
+           <select id="actionsPerInterval" name="actionsPerInterval">
+               <option value=1>1</option>
+               <option value=2>2</option>
+               <option value=3>3</option>
+               <option value=4>4</option>
+               <option value=5>5</option>
+               <option value=6>6</option>
+           </select>
+           </div>
+
+           <div class="formItem">
+           <label for="doActionQueue">Mode</label>
+           <select id="doActionQueue" name="doActionQueue">
+               <option value=false>Asynchronous</option>
+               <option value=true>Rounds</option>
+           </select>
+           </div>
+
+           <div class="formItem">
+
+           <label for="password">Optional Passphrase: </label>
+           <input id="password" name="password"/>
+           </div>
 
 
-        <label for="turnTime">Actions Interval: </label>
-        <select id="turnTime" name="turnTime">
-            <option value=12>12 hours</option>
-            <option value=6>6 hours</option>
-            <option value=4>4 hours</option>
-            <option value=3>3 hours</option>
-            <option value=2>2 hours</option>
-            <option value=1>1 hour</option>
-        </select>
+           <%- include('../../partials/player_creation_card.ejs') %>
 
-        <br/>
-        <label for="actionsPerInterval">Action Amount:</label>
-        <select id="actionsPerInterval" name="actionsPerInterval">
-            <option value=1>1</option>
-            <option value=2>2</option>
-            <option value=3>3</option>
-            <option value=4>4</option>
-            <option value=5>5</option>
-            <option value=6>6</option>
-        </select>
-
-        <br/>
-
-        <label for="doActionQueue">Mode</label>
-        <select id="doActionQueue" name="doActionQueue">
-            <option value=false>Asynchronous</option>
-            <option value=true>Rounds</option>
-        </select>
-
-        <br/>
-
-        <label for="password">Optional Passphrase: </label>
-        <input id="password" name="password"/>
-
-        <hr/>
-
-        <%- include('../../partials/player_creation_card.ejs') %>
-
-        <button type="submit">Create</button>
-    </form>
+           <button type="submit">Create</button>
+       </form>
+   </div>
+</div>
 </body>
+
+<style>
+    input, select {
+        float:right;
+    }
+</style>
 
 <%- include('../../partials/footer.html') %>

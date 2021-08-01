@@ -1,26 +1,56 @@
 <%- include('../partials/head.html') %>
+
 <body>
-    <script type="text/javascript" src="js/games_table.js"></script>
-    <div class="card">
-        <h1>Tank Turn Tactics</h1>
-        <div>
-            <h3>Welcome, <%= user %></h3>
-            <h4>Active Games:</h4>
+
+<script type="text/javascript" src="js/games_table.js"></script>
+<div id="gameTableContainer" class="container">
+    <%- include('../partials/header.html') %>
+    <div id="gamesCard">
+        <h2>Welcome, <%= user %></h2>
+        <h3>Active Games:</h3>
+        <div id="tableContainer">
             <div id="gameTable"></div>
-            <script>generateGamesTable('#gameTable')</script>
-
-            <hr/>
-
-            <a href="/join">Join a game</a>
-            <a href="/create-game">Create a game</a>
-            <a href="/auth/logout">Logout</a>
         </div>
     </div>
+</div>
+
+<script>
+    generateGamesTable('#gameTable').then(() => document.querySelector('#tableContainer').classList.add('table--slide-down'))
+</script>
+
 </body>
 
 <style>
-    .card {
-        margin: 15px auto;
+    @keyframes tableOpen {
+        0% {
+            max-height: 0;
+        }
+
+        100% {
+            max-height: 500px;
+        }
+    }
+
+    #tableContainer {
+        position: relative;
+    }
+
+    #tableContainer:after {
+        content: "";
+        position: absolute;
+        bottom: -10px;
+        height: 3px;
+        margin: 5px 0 0;
+        opacity: 1;
+        left: 0;
+        background-color: white;
+        width: 0;
+        transition: width 0.3s;
+    }
+
+    .table--slide-down {
+        animation: 2s ease-out 0s 1 tableOpen;
+        overflow: hidden;
     }
 </style>
 

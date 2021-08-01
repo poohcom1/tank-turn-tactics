@@ -24,7 +24,7 @@ function formatDate(d) {
 
 function generateGamesTable(tableQuery) {
     // Generate games table
-    fetch('/game', { method: 'GET'})
+    return fetch('/game', { method: 'GET'})
         .then(res => res.json())
         .then(games => {
             let table = document.querySelector(tableQuery);
