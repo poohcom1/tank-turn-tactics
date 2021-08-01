@@ -18,40 +18,40 @@
 
 @font-face {
     font-family: 'Hollow';
-    src: url("../assets/fonts/Hollow-Regular.ttf")
+    src: url("../assets/fonts/Hollow-Regular.woff2")
 }
 
 @font-face {
     font-family: 'Bechtlers';
-    src: url("../assets/fonts/BechtlersRegular.ttf");
+    src: url("../assets/fonts/BechtlersRegular.woff2");
 }
 
 @font-face {
     font-family: 'Bechtlers';
-    src: url("../assets/fonts/Bechtlers-Italic.ttf");
+    src: url("../assets/fonts/Bechtlers-Italic.woff2");
     font-style: italic;
 }
 
 @font-face {
     font-family: 'Uni-Sans';
-    src: url("../assets/fonts/Uni Sans Thin.otf");
+    src: url("../assets/fonts/Uni Sans Thin.woff2");
 }
 
 @font-face {
     font-family: 'Uni-Sans';
-    src: url("../assets/fonts/Uni Sans Thin Italic.otf");
+    src: url("../assets/fonts/Uni Sans Thin Italic.woff2");
     font-style: italic;
 }
 
 @font-face {
     font-family: 'Uni-Sans';
-    src: url("../assets/fonts/Uni Sans Heavy.otf");
+    src: url("../assets/fonts/Uni Sans Heavy.woff2");
     font-weight: bold;
 }
 
 @font-face {
     font-family: 'Uni-Sans';
-    src: url("../assets/fonts/Uni Sans Heavy Italic.otf");
+    src: url("../assets/fonts/Uni Sans Heavy Italic.woff2");
     font-weight: bold;
 
     font-style: italic;
