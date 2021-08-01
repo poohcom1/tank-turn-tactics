@@ -42,11 +42,13 @@ root
 | @jest-mock/express | Express mocking
 | mongodb-memory-server| Database testing
 
-## Models
+## Environment Variables
 
-### Actions
-
-
+| Key | Value |
+| -- | -- |
+| PORT | Default port |
+| DB_URI | MongoDB Uri |
+| SESSION_SECRET | Session encryption key |
 
 ## Game Design
 
