@@ -8,6 +8,7 @@ let cronString = '0 * * * *';
 if (process.env.INTERVAL_MODE) {
     if (process.env.INTERVAL_MODE === 'minute') {
         cronString = '0 * * * * *';
+        console.log('[app] Running on minute interval mode')
     }
 }
 
@@ -16,12 +17,8 @@ schedule.scheduleJob(cronString, async function() {
     const allGames = await Game.find({ hasStarted: true });
 
     // Distribute actions
-    console.log("Actions distributed! - " + new Date());
-    allGames.forEach(await distributeActions);
-
-    // Get all games on an action queue
-    const queuedGames = allGames.filter(game => game.doActionQueue);
-    queuedGames.forEach(await doActionQueue);
+    console.log("[app] Actions distributed! - " + new Date());
+    allGames.forEach(distributeActions);
 });
 
 async function distributeActions(game) {
@@ -38,6 +35,10 @@ async function distributeActions(game) {
         game.turnTimePassed++;
     }
 
+    if (game.doActionQueue) {
+        await doActionQueue(game)
+    }
+
     await game.save();
 }
 
@@ -49,17 +50,17 @@ async function doActionQueue(game) {
 
     const sortedActions = []
 
+    // Order action by filtering
     ACTIONS_ORDER.forEach(actionName => {
         sortedActions.push(...actions.filter(action => action.action === actionName))
     })
 
-    for (const action in sortedActions) {
-        const player = findPlayer(players, action.player_id);
+    for (const action of sortedActions) {
+        const player = players.find(player => player._id.equals(action.player_id));
 
-        await actionFunctions[action.action](game, player, action)
+        const result = await actionFunctions[action.action](game, player, action)
+        if (result.status !== 200) console.log(result.message)
     }
-}
 
-function findPlayer(playerList, id) {
-    return playerList.find(player => player.id === id)[0];
+    game.actions = [];
 }

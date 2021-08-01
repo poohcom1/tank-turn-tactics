@@ -45,10 +45,11 @@ root
 ## Environment Variables
 
 | Key | Value |
-| -- | -- |
+|----|-----|
 | PORT | Default port |
 | DB_URI | MongoDB Uri |
 | SESSION_SECRET | Session encryption key |
+| INTERVAL_MODE | Unit of interval (hour/minute) |
 | ADMIN_EMAIL | Admin email |
 | ADMIN_PASSWORD | Admin password |
 
