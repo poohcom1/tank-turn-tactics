@@ -71,8 +71,7 @@ html {
 
 body {
     margin: 0;
-    background-color: var(--bg);
-    background: url("../assets/gridwallpaper.jpg");
+    background: url("../assets/gridwallpaper.jpg") black;
     background-size: 100%;
     color: var(--secondary);
     height: inherit;
