@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const User = require('../models/UserModel.js')
+const { createUser } = require("../controllers/AuthController.js");
 
 mongoose.Promise = global.Promise;
 
@@ -22,6 +24,15 @@ function connectToDB(app, timeout) {
     mongoose.connect(dbUri, dbOptions)
         .then(m => {
             console.log(`[mongodb] Connected to database ${m.connection.name}`);
+
+            // Set admin user
+            User.findOne({ email: process.env.ADMIN_EMAIL} )
+                .then(player => {
+                    if (!player) {
+                        createUser(process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD, true)
+                            .then(() => console.log("Admin created!"))
+                    }
+                })
 
             app.emit('ready')
         })

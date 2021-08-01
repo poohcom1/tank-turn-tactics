@@ -13,7 +13,7 @@
             <option value="10">10x10</option>
             <option value="20">20x20</option>
             <option value="30">30x30</option>
-            <option value="40">30x30</option>
+            <option value="40">40x40</option>
         </select>
 
         <br/>
@@ -21,12 +21,31 @@
 
         <label for="turnTime">Actions Interval: </label>
         <select id="turnTime" name="turnTime">
-            <option value="12">12 hours</option>
-            <option value="6">6 hours</option>
-            <option value="4">4 hours</option>
-            <option value="3">3 hours</option>
-            <option value="2">2 hours</option>
-            <option value="1">1 hour</option>
+            <option value=12>12 hours</option>
+            <option value=6>6 hours</option>
+            <option value=4>4 hours</option>
+            <option value=3>3 hours</option>
+            <option value=2>2 hours</option>
+            <option value=1>1 hour</option>
+        </select>
+
+        <br/>
+        <label for="actionsPerInterval">Action Amount:</label>
+        <select id="actionsPerInterval" name="actionsPerInterval">
+            <option value=1>1</option>
+            <option value=2>2</option>
+            <option value=3>3</option>
+            <option value=4>4</option>
+            <option value=5>5</option>
+            <option value=6>6</option>
+        </select>
+
+        <br/>
+
+        <label for="doActionQueue">Mode</label>
+        <select id="doActionQueue" name="doActionQueue">
+            <option value=false>Asynchronous</option>
+            <option value=true>Rounds</option>
         </select>
 
         <br/>

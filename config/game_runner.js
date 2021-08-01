@@ -1,14 +1,25 @@
 const schedule = require('node-schedule');
 const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
-const actionFunctions =  require('../controllers/ActionController.js')
+const actionFunctions = require('../controllers/ActionController.js')
 
-schedule.scheduleJob('0 * * * *', async function() {
-    const allGames = await Game.find({ hasStarted: true});
+let cronString = '0 * * * *';
 
+if (process.env.INTERVAL_MODE) {
+    if (process.env.INTERVAL_MODE === 'minute') {
+        cronString = '0 * * * * *';
+    }
+}
+
+schedule.scheduleJob(cronString, async function() {
+    // Get all started games
+    const allGames = await Game.find({ hasStarted: true });
+
+    // Distribute actions
     console.log("Actions distributed! - " + new Date());
     allGames.forEach(await distributeActions);
 
+    // Get all games on an action queue
     const queuedGames = allGames.filter(game => game.doActionQueue);
     queuedGames.forEach(await doActionQueue);
 });

@@ -3,12 +3,12 @@
 <h1>Waiting for "<%= gameName %>" to start</h1>
 
 <div>
+    <label for="invite">Invite link: </label>
     <input id="invite" readonly/>
     <button id="copy">Copy</button>
 
     <div id="playerList">
         <h2>Players:</h2>
-
     </div>
 
     <script>
@@ -32,7 +32,7 @@
     <script>
         const inviteInput = document.querySelector("#invite")
 
-        inviteInput.value = window.location.host + "/join?game=" + gameId
+        inviteInput.value = location.protocol + '//' + window.location.host + "/join?game=" + gameId
 
         document.querySelector("#copy").onclick = () => {
             /* Select the text field */
