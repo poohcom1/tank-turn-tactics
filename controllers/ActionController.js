@@ -130,7 +130,7 @@ async function give(game, player, data) {
  */
 async function logAction(game, playerId, action, data, type) {
     game[type].push({
-        action: 'move',
+        action: action,
         player_id: playerId,
         ...data
     })
@@ -170,7 +170,7 @@ async function attackRequest(req, res) {
 
         res.status(result.status).send(result.message)
     } else {
-        const success = await logAction(req.game, req.player._id, 'attack', { targetId: req.params.targetId }, 'actionLog')
+        const success = await logAction(req.game, req.player._id, 'attack', { targetId: req.params.targetId }, 'actions')
 
         if (success) {
             res.status(200).send('ok')
@@ -189,7 +189,7 @@ async function upgradeRequest (req, res) {
 
         res.status(result.status).send(result.message)
     } else {
-        const success = await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade }, 'actionLog')
+        const success = await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade }, 'actions')
 
         if (success) {
             res.status(200).send('ok')
@@ -207,7 +207,7 @@ async function giveRequest(req, res) {
 
         res.status(result.status).send(result.message)
     } else {
-        const success = await logAction(req.game, req.player._id, 'give', { targetId: req.params.targetId }, 'actionLog')
+        const success = await logAction(req.game, req.player._id, 'give', { targetId: req.params.targetId }, 'actions')
 
         if (success) {
             await req.game.save();
