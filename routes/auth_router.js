@@ -8,6 +8,6 @@ router.post('/register', register)
 
 router.post('/login', passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login?error=true'}))
 
-router.post('/logout', logout)
+router.get('/logout', logout)
 
 module.exports = router;
