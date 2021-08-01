@@ -67,7 +67,7 @@ module.exports.joinGame = async function (req, res) {
         return res.redirect('/join?error=gameStarted')
     }
 
-    const existingPlayers = await Player.find({ user_id: req.user.id, game_id: game._id, actions: game.actionsPerInterval })
+    const existingPlayers = await Player.find({ user_id: req.user.id, game_id: game._id })
 
     if (existingPlayers && existingPlayers.length > 0) {
         console.log("Player already joined!")
@@ -78,7 +78,8 @@ module.exports.joinGame = async function (req, res) {
         await new Player({
             name: responseJson.displayName !== '' ? responseJson.displayName : req.user.email,
             user_id: req.user.id,
-            game_id: responseJson.gameId
+            game_id: responseJson.gameId,
+            actions: game.actionsPerInterval
         }).save()
 
         res.redirect('/play?game=' + responseJson.gameId)
