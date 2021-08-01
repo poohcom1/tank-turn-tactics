@@ -7,7 +7,7 @@
         <p class="error"></p>
 
         <label for="gameId">Game code:</label>
-        <input id="gameId" value="<%= game_id %>" name="gameId"/>
+        <input id="gameId" name="gameId"/>
 
         <%if (usePassphrase) { %>
             <label for="passphrase">Passphrase</label>
@@ -30,6 +30,12 @@
             }
         }
         document.querySelector('.error').innerHTML = error;
+
+        let gameId = urlParams.get('game')
+
+        if (gameId) {
+            document.querySelector('#gameId').value = gameId;
+        }
     </script>
 </body>
 

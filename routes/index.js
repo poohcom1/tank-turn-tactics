@@ -47,7 +47,7 @@ router.get('/play', isLoggedIn, async (req, res) => {
     if (game.hasStarted) {
         res.render('pages/game/play')
     } else {
-        res.render('pages/game/lobby', { isCreator: game.creator_id.equals(req.user.id) })
+        res.render('pages/game/lobby', { isCreator: game.creator_id.equals(req.user.id), gameName: game.name })
     }
 })
 
