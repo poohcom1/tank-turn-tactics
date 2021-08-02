@@ -1,7 +1,7 @@
 class Driver {
     static MODE_PASSIVE = "passive";
     static MODE_ACTIVE = "active";
-    static TRANSPARENT = "TRANSPARENT"
+    static TRANSPARENT = "TRANSPARENT";
 
     //component types templates
 
