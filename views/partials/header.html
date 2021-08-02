@@ -28,6 +28,7 @@
             flex-direction: column;
 
             margin: 0;
+            margin-right: 15px;
 
             top: 0;
             left: 0;
@@ -55,24 +56,51 @@
             opacity: 0.6;
         }
 
-        nav h1, nav a {
-            margin: 15px 15px 10px 10px;
+        nav h1 {
+            margin: 25px 10px;
             color: inherit;
         }
 
         a.navItem {
             font-family: Uni-Sans, Georama, serif;
-            margin: 30px 20px;
+            margin: 0 20px;
+            height: 90px;
             font-size: 35px;
             position: relative;
+            color: var(--anchor-text);
+
+            display: flex;
+            align-items: center;
+        }
+
+        a.navItem:hover {
+            color: white;
+        }
+
+        a.navItem:before {
+            content: "";
+            position: absolute;
+            top: 0;
+            height: 3px;
+            margin: 5px 0 0;
+            opacity: 1;
+            right: 0;
+            background-color: white;
+            width: 0;
+
+            transition: width 0.3s;
+        }
+
+        a.navItem:hover:before, a.navItem:active:before {
+            width: 100%;
         }
 
         a.navItem:after {
             content: "";
             position: absolute;
-            bottom: -10px;
+            bottom: 0;
             height: 3px;
-            margin: 5px 0 0;
+            margin: 0;
             opacity: 1;
             left: 0;
             background-color: white;

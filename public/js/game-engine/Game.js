@@ -1,10 +1,48 @@
 class Driver {
     static MODE_PASSIVE = "passive";
     static MODE_ACTIVE = "active";
-    static TRANSPARENT = "TRANSPARENT"
+    static TRANSPARENT = "TRANSPARENT";
+
+    static ActiveComponent = class {
+        /**
+         * @param {Driver} driver
+         */
+        update(driver) {};
+
+        /**
+         * @param {Driver} driver
+         */
+        redraw(driver) {}
+    }
+
+    static PassiveComponent = class {
+        /**
+         * @param {Driver} driver
+         * @param {MouseEvent} e
+         */
+        onMouseEvent(driver, e) {};
+
+        /**
+         * @param {Driver} driver
+         * @param {KeyboardEvent} e
+         */
+        onKeyEvent(driver, e) {};
+
+        /**
+         * @param {Driver} driver
+         */
+        redraw(driver) {};
+    }
 
     //internal variables
+
+    /**
+     * @type {CanvasRenderingContext2D}
+     */
     canvas_ctx = undefined;
+    /**
+     * @type {string}
+     */
     mode = undefined;
     image_cache = {};
     bg_color = "#000000"
@@ -15,6 +53,9 @@ class Driver {
     
     //push your components here
     components = [];
+
+    // Callbacks
+    onPostRedraw = () => {};
 
     constructor(ctx, parent_div, document_handle, mode = Driver.MODE_PASSIVE, bg_color = "#000000"){
         this.canvas_ctx = ctx;
@@ -58,7 +99,7 @@ class Driver {
             })
             this.redraw();
         } else {
-            if(event.type === "mousemove"){
+            if (event.type === "mousemove") {
                 this.mouse_events.x = event.offsetX;
                 this.mouse_events.y = event.offsetY;
             } else if (event.type === "mousedown"){
@@ -70,9 +111,7 @@ class Driver {
     };
 
     onKeyEvent = (event) => {
-        console.log("Key Event" + `: ${event.key} , ${event.code}`);
-
-        if(this.mode === Driver.MODE_PASSIVE){
+        if(this.mode === Driver.MODE_PASSIVE) {
             this.components.forEach((component) => {
                 component.onKeyEvent(this, event);
             })
@@ -99,7 +138,9 @@ class Driver {
         this.components.forEach((component) => {
             component.redraw(this);
         })
-    };
+
+        this.onPostRedraw(this);
+    }
 
     update = () => {
         this.components.forEach((component) => {
@@ -109,9 +150,11 @@ class Driver {
         this.redraw();
     }
 
-    run = (frame_interval) => {
+    run = (frame_interval=16) => {
         if(this.mode === Driver.MODE_ACTIVE){
             setInterval(this.update, frame_interval);
+        } else {
+            this.redraw()
         }
     }
 
@@ -119,135 +162,59 @@ class Driver {
         let img = this.image_cache[image_uri];
         this.canvas_ctx.drawImage(img, dx, dy, width, height);
     }
-};
 
-class TestGameObject {
-    picture = "/assets/test2.jpg";
-    x = 200;
-    y = 0;
+}
 
-    redraw = (driver) => {
-        driver.drawImageFromCache(this.picture, this.x, this.y, 200, 200 * 0.700323102);
-    };
-
-    update = (driver) => {
-        if(driver.mouse_events.down == true){
-            this.x = driver.mouse_events.x;
-            this.y = driver.mouse_events.y;
-            console.log("mouse down!" + parseInt(this.x) +" : "+ parseInt(this.y));
-        }
-
-        if(driver.key_events['ArrowRight'] == true){
-            this.x = this.x + 10;
-        }
-        if(driver.key_events['ArrowLeft'] == true){
-            this.x = this.x - 10;
-        }
-        if(driver.key_events['ArrowUp'] == true){
-            this.y = this.y - 10;
-        }
-        if(driver.key_events['ArrowDown'] == true){
-            this.y = this.y + 10;
+/**
+ *
+ * @param {HTMLDivElement} div
+ * @param {string} mode
+ * @param {{width: number, height: number}} dimensions
+ * @param {string|null} background
+ * @param {number|null} index
+ */
+function initDriver(div, mode, dimensions, background = Driver.TRANSPARENT, index=null) {
+    if (!index) {
+        if (initDriver.zIndex) {
+            index = initDriver.zIndex++;
+        } else {
+            initDriver.zIndex = 0;
+            index = 0;
         }
     }
+
+    div.style.position = 'relative';
+
+    const canvas = document.createElement('canvas');
+    canvas.style.position = 'absolute'
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
+
+    canvas.style.zIndex = `${ index }`;
+
+    div.appendChild(canvas)
+
+    return new Driver(canvas.getContext('2d'), div, document, mode, background)
 }
 
-class Ball {
-    picture = "/assets/ball.jpg";
-    x = 300;
-    y = 0;
-    dy = 10;
-
-    in
-
-    redraw = (driver) => {
-        driver.drawImageFromCache(this.picture, this.x, this.y, 100, 100);
-    };
-
-    update = (driver) => {
-        if(this.y < 0) {
-            this.y = 1;
-            this.dy = 10;
-        }
-
-        if(this.y > 600){
-            this.y = 599;
-            this.dy = -10;
-        }
-
-        this.y = this.y + this.dy;
-    }
+/**
+ * @param {Object} pos
+ * @param {number} pos.x
+ * @param {number} pos.y
+ * @param {Object} bounds
+ * @param {number} bounds.x
+ * @param {number} bounds.y
+ * @param {number} bounds.width
+ * @param {number} bounds.height
+ * @return {boolean}
+ */
+function inBounds(pos, bounds) {
+    return pos.x > bounds.x && pos.y > bounds.y && pos.x < bounds.x + bounds.width && pos.y < bounds.y + bounds.height;
 }
 
-class PassiveYuri {
-    picture = "/assets/test.jpg";
-    x = 0;
-    y = 0;
-
-    redraw = (driver) => {
-        let img = driver.image_cache[this.picture];
-        let ratio = img.height / img.width;
-        driver.drawImageFromCache(this.picture, this.x, this.y, 100, 100 * ratio);
-    };
-
-    onMouseEvent = (driver, event) => {
-    };
-
-    onKeyEvent = (driver, event) => {
-        if(event.type === "keydown" && event.code === "ArrowRight"){
-            this.x = this.x + 10;
-        }
-        if(event.type === "keydown" && event.code === "ArrowLeft"){
-            this.x = this.x - 10;
-        }
-        if(event.type === "keydown" && event.code === "ArrowUp"){
-            this.y = this.y - 10;
-        }
-        if(event.type === "keydown" && event.code === "ArrowDown"){
-            this.y = this.y + 10;
-        }
-    };
+function inRange(pos, target, range) {
+    return Math.sqrt(Math.pow(target.x - pos.x, 2) + Math.pow(target.y - pos.y, 2)) <= range;
 }
-
-(async () => {
-    let parent_div = document.getElementById("parent_div");
-
-
-    let canvas = document.getElementById("root_canvas");
-    let ctx = canvas.getContext("2d");
-    ctx.canvas.width = 1000;
-    ctx.canvas.height = 1000;
-
-    let driver = new Driver(ctx, parent_div, document, Driver.MODE_ACTIVE, Driver.TRANSPARENT);
-
-    let images = ['/assets/test.jpg', '/assets/test2.jpg', '/assets/ball.jpg'];
-
-    let promises = driver.imagePreload(images);
-    await promises;
-
-    let face = new TestGameObject;
-    let ball = new Ball;
-
-    driver.components.push(face);
-    driver.components.push(ball);
-    driver.run(16);
-
-
-
-
-
-    let canvas2 = document.getElementById("root_2");
-    let ctx2 = canvas2.getContext("2d");
-    ctx2.canvas.width = 1000;
-    ctx2.canvas.height = 1000;
-
-    let driver2 = new Driver(ctx2, parent_div, document, Driver.MODE_PASSIVE, "#000000");
-
-    promises = driver2.imagePreload(images);
-    await promises;
-
-    let yuri = new PassiveYuri;
-    driver2.components.push(yuri);
-    driver2.redraw();
-
-})();

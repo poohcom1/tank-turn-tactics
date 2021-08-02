@@ -1,0 +1,145 @@
+<body>
+
+<div id="gameContainer">
+</div>
+
+<script type="text/javascript" src="js/game-engine/Game.js"></script>
+
+<script>
+    const game = JSON.parse('<%- JSON.stringify(game) %>')
+
+    const size = game.size
+    const gridSize = 50;
+
+    const parentDiv = document.querySelector('#gameContainer')
+    const gameDim = { width: 1000, height: 1000 }
+
+    const backgroundDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
+
+    class GridBox extends Driver.ActiveComponent {
+        constructor(x, y, width, height, color) {
+            super();
+
+            this.active = false;
+
+            this.range = false;
+
+            this.borderColor = color;
+
+            this.defaultColor = '#ffffff00';
+            this.color = this.defaultColor;
+
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+
+            this.opacity = 0.5;
+            this.opacityDelta = 0.02;
+        }
+
+        update(driver) {
+            const mousePos = driver.mouse_events;
+
+            this.active = inBounds(mousePos, this);
+
+            if (this.active) {
+                this.opacity += this.opacityDelta;
+                if (this.opacity < 0.5 || this.opacity > 1.0) this.opacityDelta = -this.opacityDelta;
+            }
+        }
+
+        redraw = driver => {
+            const ctx = driver.canvas_ctx;
+            ctx.strokeStyle = this.borderColor
+            ctx.strokeRect(this.x, this.y, this.width, this.height)
+
+            if (this.active || this.range) {
+                ctx.strokeStyle = `rgba(255,255,255,${ this.opacity })`
+                ctx.strokeRect(this.x, this.y, this.width, this.height)
+            }
+
+            this.range = false;
+        }
+    }
+
+    const grid = [];
+    for (let i = 0; i < size.width; i++) {
+        grid.push([])
+        for (let j = 0; j < size.height; j++) {
+            const gridBox = new GridBox(i * gridSize, j * gridSize, gridSize, gridSize, (i + j) % 2 === 0 ? 'rgba(7,129,0,0.4)' : 'rgba(52,52,52,0.11)');
+
+            grid[i].push(gridBox)
+            backgroundDriver.components.push(gridBox)
+        }
+    }
+
+    const objectDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
+
+    class Tank extends Driver.ActiveComponent {
+        constructor(player) {
+            super();
+            this.player = player
+
+            this.box = grid[player.position.x][player.position.y];
+
+            this.x = this.box.x;
+            this.y = this.box.y;
+            this.width = this.box.width;
+            this.height = this.box.height;
+        }
+
+        update(driver) {
+            grid[2][2].active = true;
+
+            const range = 3
+            const x = this.player.position.x;
+            const y = this.player.position.y;
+            for (let i = Math.max(x - range, 0); i < Math.min(x + range, size.width); i++) {
+                for (let j = Math.max(y - range, 0); j < Math.min(y + range, size.width); j++) {
+                    if (inRange(this.player.position, { x: i, y: j }, range)) {
+                        grid[i][j].active = true;
+                    }
+                }
+            }
+        }
+
+        /**
+         * @param {CanvasRenderingContext2D} ctx
+         * @param {string} color
+         */
+        drawTriangle(ctx, color) {
+            const padding = this.width/6;
+            const center = { x: this.x + this.width / 2, y: this.y + padding };
+            const left = { x: this.x + padding, y: this.y + this.height - padding }
+            const right = { x: this.x + this.width - padding, y: this.y + this.height - padding }
+
+            ctx.beginPath();
+            ctx.moveTo(center.x, center.y);
+            ctx.lineTo(right.x, right.y)
+            ctx.lineTo(left.x, left.y)
+            ctx.lineTo(center.x, center.y)
+            ctx.closePath();
+            ctx.fillStyle = color
+            ctx.fill();
+        }
+
+        redraw(driver) {
+            const ctx = driver.canvas_ctx;
+            const color = this.player.user_id === game.user_id ? 'rgba(0,255,195,0.77)' : 'rgba(255,65,65,0.58)'
+            this.drawTriangle(ctx, color)
+        }
+    }
+
+    game.players.forEach(player => objectDriver.components.push(new Tank(player)))
+
+    backgroundDriver.run(16);
+    objectDriver.run(16);
+</script>
+</body>
+
+<style>
+    body {
+        background-color: black;
+    }
+</style>

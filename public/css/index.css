@@ -1,7 +1,7 @@
 :root {
     --bg: #342e2e;
 
-    --secondary: #a4a29b;
+    --secondary: #c5c4c1;
     --secondary-glow: #eeeae9;
 
     --contrast: #f8c33d;
@@ -10,7 +10,9 @@
 
     --error: #e03f3f;
 
-    --input-text: #dedede;
+    --anchor-text: #a8a8a8;
+
+    --input-text: #b7b7b7;
     --input-placeholder: #868686;
 
     --main-font: 'Georama';
@@ -27,35 +29,10 @@
 }
 
 @font-face {
-    font-family: 'Bechtlers';
-    src: url("../assets/fonts/Bechtlers-Italic.woff2");
-    font-style: italic;
-}
-
-@font-face {
     font-family: 'Uni-Sans';
     src: url("../assets/fonts/Uni Sans Thin.woff2");
 }
 
-@font-face {
-    font-family: 'Uni-Sans';
-    src: url("../assets/fonts/Uni Sans Thin Italic.woff2");
-    font-style: italic;
-}
-
-@font-face {
-    font-family: 'Uni-Sans';
-    src: url("../assets/fonts/Uni Sans Heavy.woff2");
-    font-weight: bold;
-}
-
-@font-face {
-    font-family: 'Uni-Sans';
-    src: url("../assets/fonts/Uni Sans Heavy Italic.woff2");
-    font-weight: bold;
-
-    font-style: italic;
-}
 
 * {
     font-family: var(--main-font), sans-serif;
