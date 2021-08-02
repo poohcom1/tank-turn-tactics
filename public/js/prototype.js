@@ -161,6 +161,7 @@ class Driver {
 
     run = (frame_interval = 16) => {
         if(this.mode === Driver.MODE_ACTIVE && !this.actively_running){
+            this.update();
             this.run_loop_obj = setInterval(this.update, frame_interval);
             this.actively_running = true;
         } else {
@@ -322,6 +323,6 @@ class PassiveYuri {
 
     let yuri = new PassiveYuri(driver);
     driver2.components.push(yuri);
-    driver2.redraw();
+    driver2.run();
 
 })();
