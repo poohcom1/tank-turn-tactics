@@ -1,7 +1,9 @@
 class Driver {
     static MODE_PASSIVE = "passive";
     static MODE_ACTIVE = "active";
-    static TRANSPARENT = "TRANSPARENT";
+    static TRANSPARENT = "TRANSPARENT"
+
+    //component types templates
 
     static ActiveComponent = class {
         /**
@@ -34,28 +36,37 @@ class Driver {
         redraw(driver) {};
     }
 
-    //internal variables
+    //internal variables ---------------------
 
     /**
      * @type {CanvasRenderingContext2D}
      */
     canvas_ctx = undefined;
+
     /**
      * @type {string}
      */
     mode = undefined;
-    image_cache = {};
-    bg_color = "#000000"
+    
+    run_loop_obj = undefined;
 
-    //event variables
+    //----------------------------------------
+
+    //event variables ------------------------
+
     mouse_events = {};
     key_events = {};
+
+    //----------------------------------------
     
+    //external variables -------------------
+
     //push your components here
     components = [];
 
-    // Callbacks
-    onPostRedraw = () => {};
+    image_cache = {};
+    bg_color = "#000000";
+    actively_running = false;
 
     constructor(ctx, parent_div, document_handle, mode = Driver.MODE_PASSIVE, bg_color = "#000000"){
         this.canvas_ctx = ctx;
@@ -99,27 +110,29 @@ class Driver {
             })
             this.redraw();
         } else {
-            if (event.type === "mousemove") {
+            if(event.type == "mousemove"){
                 this.mouse_events.x = event.offsetX;
                 this.mouse_events.y = event.offsetY;
-            } else if (event.type === "mousedown"){
+            } else if (event.type == "mousedown"){
                 this.mouse_events.down = true;
-            } else if (event.type === "mouseup"){
+            } else if (event.type == "mouseup"){
                 this.mouse_events.down = false;
             }
         }
     };
 
     onKeyEvent = (event) => {
-        if(this.mode === Driver.MODE_PASSIVE) {
+        console.log("Key Event" + `: ${event.key} , ${event.code}`);
+
+        if(this.mode === Driver.MODE_PASSIVE){
             this.components.forEach((component) => {
                 component.onKeyEvent(this, event);
             })
             this.redraw();
         } else {
-            if(event.type === "keydown"){
+            if(event.type == "keydown"){
                 this.key_events[event.code] = true;
-            }else if (event.type === "keyup"){
+            }else if (event.type == "keyup"){
                 this.key_events[event.code] = false;
             }
         }
@@ -138,9 +151,7 @@ class Driver {
         this.components.forEach((component) => {
             component.redraw(this);
         })
-
-        this.onPostRedraw(this);
-    }
+    };
 
     update = () => {
         this.components.forEach((component) => {
@@ -150,11 +161,19 @@ class Driver {
         this.redraw();
     }
 
-    run = (frame_interval=16) => {
-        if(this.mode === Driver.MODE_ACTIVE){
-            setInterval(this.update, frame_interval);
+    run = (frame_interval = 16) => {
+        if(this.mode === Driver.MODE_ACTIVE && !this.actively_running){
+            this.run_loop_obj = setInterval(this.update, frame_interval);
+            this.actively_running = true;
         } else {
-            this.redraw()
+            this.redraw();
+        }
+    }
+
+    stop = () => {
+        if(this.mode === Driver.MODE_ACTIVE && this.actively_running){
+            clearInterval(this.run_loop_obj);
+            this.actively_running = false;
         }
     }
 
@@ -162,8 +181,8 @@ class Driver {
         let img = this.image_cache[image_uri];
         this.canvas_ctx.drawImage(img, dx, dy, width, height);
     }
-
 }
+
 
 /**
  *
