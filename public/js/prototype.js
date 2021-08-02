@@ -8,6 +8,7 @@ class Driver {
     mode = undefined;
     image_cache = {};
     bg_color = "#000000"
+    run_loop_obj = undefined;
 
     //event variables
     mouse_events = {};
@@ -15,6 +16,7 @@ class Driver {
     
     //push your components here
     components = [];
+    actively_running = false;
 
     constructor(ctx, parent_div, document_handle, mode = Driver.MODE_PASSIVE, bg_color = "#000000"){
         this.canvas_ctx = ctx;
@@ -58,12 +60,12 @@ class Driver {
             })
             this.redraw();
         } else {
-            if(event.type === "mousemove"){
+            if(event.type == "mousemove"){
                 this.mouse_events.x = event.offsetX;
                 this.mouse_events.y = event.offsetY;
-            } else if (event.type === "mousedown"){
+            } else if (event.type == "mousedown"){
                 this.mouse_events.down = true;
-            } else if (event.type === "mouseup"){
+            } else if (event.type == "mouseup"){
                 this.mouse_events.down = false;
             }
         }
@@ -78,9 +80,9 @@ class Driver {
             })
             this.redraw();
         } else {
-            if(event.type === "keydown"){
+            if(event.type == "keydown"){
                 this.key_events[event.code] = true;
-            }else if (event.type === "keyup"){
+            }else if (event.type == "keyup"){
                 this.key_events[event.code] = false;
             }
         }
@@ -110,8 +112,16 @@ class Driver {
     }
 
     run = (frame_interval) => {
-        if(this.mode = Driver.MODE_ACTIVE){
-            setInterval(this.update, frame_interval);
+        if(this.mode === Driver.MODE_ACTIVE && !this.actively_running){
+            this.run_loop_obj = setInterval(this.update, frame_interval);
+            this.actively_running = true;
+        }
+    }
+
+    stop = () => {
+        if(this.mode === Driver.MODE_ACTIVE && this.actively_running){
+            clearInterval(this.run_loop_obj);
+            this.actively_running = false;
         }
     }
 
@@ -183,6 +193,11 @@ class PassiveYuri {
     picture = "/test.jpg";
     x = 0;
     y = 0;
+    other_driver = undefined;
+
+    constructor (other_driver) {
+        this.other_driver = other_driver;
+    }
 
     redraw = (driver) => {
         let img = driver.image_cache[this.picture];
@@ -205,6 +220,13 @@ class PassiveYuri {
         }
         if(event.type === "keydown" && event.code === "ArrowDown"){
             this.y = this.y + 10;
+        }
+        if(event.type === "keydown" && event.code === "Enter"){
+            if(this.other_driver.actively_running == false){
+                this.other_driver.run(16);
+            } else {
+                this.other_driver.stop();
+            }
         }
     };
 }
@@ -230,7 +252,7 @@ class PassiveYuri {
 
     driver.components.push(face);
     driver.components.push(ball);
-    driver.run(16);
+    //driver.run(16);
 
 
 
@@ -246,7 +268,7 @@ class PassiveYuri {
     promises = driver2.imagePreload(images);
     await promises;
 
-    let yuri = new PassiveYuri;
+    let yuri = new PassiveYuri(driver);
     driver2.components.push(yuri);
     driver2.redraw();
 
