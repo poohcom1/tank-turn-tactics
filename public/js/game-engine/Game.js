@@ -122,8 +122,6 @@ class Driver {
     };
 
     onKeyEvent = (event) => {
-        console.log("Key Event" + `: ${event.key} , ${event.code}`);
-
         if(this.mode === Driver.MODE_PASSIVE){
             this.components.forEach((component) => {
                 component.onKeyEvent(this, event);
