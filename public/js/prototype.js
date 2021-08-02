@@ -1,7 +1,7 @@
 class Driver {
     static MODE_PASSIVE = "passive";
     static MODE_ACTIVE = "active";
-    static TRANSPARENT = "TRANSPARENT"
+    static TRANSPARENT = "TRANSPARENT";
 
     //component types templates
 
@@ -122,8 +122,6 @@ class Driver {
     };
 
     onKeyEvent = (event) => {
-        console.log("Key Event" + `: ${event.key} , ${event.code}`);
-
         if(this.mode === Driver.MODE_PASSIVE){
             this.components.forEach((component) => {
                 component.onKeyEvent(this, event);
@@ -181,7 +179,9 @@ class Driver {
         let img = this.image_cache[image_uri];
         this.canvas_ctx.drawImage(img, dx, dy, width, height);
     }
-};
+}
+
+
 
 class TestGameObject {
     picture = "/test2.jpg";
