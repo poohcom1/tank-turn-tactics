@@ -3,19 +3,69 @@ class Driver {
     static MODE_ACTIVE = "active";
     static TRANSPARENT = "TRANSPARENT"
 
-    //internal variables
+    //component types templates
+
+    static ActiveComponent = class {
+        /**
+         * @param {Driver} driver
+         */
+        update(driver) {};
+
+        /**
+         * @param {Driver} driver
+         */
+        redraw(driver) {}
+    }
+
+    static PassiveComponent = class {
+        /**
+         * @param {Driver} driver
+         * @param {MouseEvent} e
+         */
+        onMouseEvent(driver, e) {};
+
+        /**
+         * @param {Driver} driver
+         * @param {KeyboardEvent} e
+         */
+        onKeyEvent(driver, e) {};
+
+        /**
+         * @param {Driver} driver
+         */
+        redraw(driver) {};
+    }
+
+    //internal variables ---------------------
+
+    /**
+     * @type {CanvasRenderingContext2D}
+     */
     canvas_ctx = undefined;
+
+    /**
+     * @type {string}
+     */
     mode = undefined;
-    image_cache = {};
-    bg_color = "#000000"
+    
     run_loop_obj = undefined;
 
-    //event variables
+    //----------------------------------------
+
+    //event variables ------------------------
+
     mouse_events = {};
     key_events = {};
+
+    //----------------------------------------
     
+    //external variables -------------------
+
     //push your components here
     components = [];
+
+    image_cache = {};
+    bg_color = "#000000";
     actively_running = false;
 
     constructor(ctx, parent_div, document_handle, mode = Driver.MODE_PASSIVE, bg_color = "#000000"){
@@ -111,10 +161,12 @@ class Driver {
         this.redraw();
     }
 
-    run = (frame_interval) => {
+    run = (frame_interval = 16) => {
         if(this.mode === Driver.MODE_ACTIVE && !this.actively_running){
             this.run_loop_obj = setInterval(this.update, frame_interval);
             this.actively_running = true;
+        } else {
+            this.redraw();
         }
     }
 
