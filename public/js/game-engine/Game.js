@@ -1,4 +1,4 @@
-class Driver {
+export class Driver {
     static MODE_PASSIVE = "passive";
     static MODE_ACTIVE = "active";
     static TRANSPARENT = "TRANSPARENT";
@@ -180,8 +180,8 @@ class Driver {
         let img = this.image_cache[image_uri];
         this.canvas_ctx.drawImage(img, dx, dy, width, height);
     }
-}
 
+}
 
 /**
  *
