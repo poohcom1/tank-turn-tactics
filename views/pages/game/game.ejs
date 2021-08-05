@@ -58,7 +58,6 @@
             updateTanks()
             updateStats()
         })
-        .catch(alert)
     }
 
     const backgroundDriver = initDriver(parentDiv, Driver.MODE_PASSIVE, gameDim)
@@ -143,6 +142,11 @@
             this.player = player
 
             this.move(player.position)
+        }
+
+        refetch(player) {
+            this.player = player
+            this.move(this.player.position)
         }
 
         move(pos) {
@@ -251,7 +255,7 @@
     function updateTanks() {
         tanks.map(tank => {
             const player = game.players.find(player => player._id === tank.player._id);
-            tank.player = player;
+            tank.refetch(player)
         })
     }
 
@@ -377,9 +381,7 @@
                 refetch()
                 this.init()
                 this.confirming = false;
-                console.log(this.boxes)
             })
-            .catch(() => alert())
         }
 
         getCurrentBox = () => this.boxes[this.boxes.length - 1]
@@ -534,7 +536,7 @@
 
         document.querySelector('#name').innerHTML = player.name
         document.querySelector('#id').innerHTML = ` &lt${getChar(player.position.y)}${player.position.x + 1}&gt ${ player._id }`
-        document.querySelector('#actions').innerHTML = "Energy: " + player.actions + (isUser && actions !== player.actions ? ` (${ actions })` : '')
+        document.querySelector('#actions').innerHTML = "Energy: " + player.actions + (isUser && actions !== player.actions ? ` → ${ actions }` : '')
         document.querySelector('#health').innerHTML = "Health: " + player.health
         document.querySelector('#range').innerHTML = "Range: " + player.range
     }
