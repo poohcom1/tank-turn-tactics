@@ -1,65 +1,83 @@
+<%- include('../../partials/head.html') %>
+
+<style>
+    body {
+        background: none
+    }
+</style>
+
 <body>
 
-<div id="gameContainer">
+<div id="gameContainer"></div>
+
+<div id="infoPanel" class="panel">
+    <h3 id="name"></h3>
+    <p id="id"></p>
+    <p id="health"></p>
+
+    <div id="private">
+        <p id="actions"></p>
+        <p id="range"></p>
+    </div>
+    <p id="kills"></p>
 </div>
 
 <script type="text/javascript" src="js/game-engine/Game.js"></script>
 
 <script>
     const game = JSON.parse('<%- JSON.stringify(game) %>')
+    const userPlayer = game.players.find(player => player.user_id === game.user_id)
 
     const size = game.size
-    const gridSize = 50;
+    const GRID_SIZE = 50;
 
+    // Scores
+    let actions = userPlayer.actions
+
+    // Colors
+    const c_gridLabel = 'rgba(255,255,255,0.46)';
+    const c_gridLabelSelected = 'rgb(117,255,234)';
+
+    const c_playerRange = 'rgb(117,255,234)'
+    const c_enemyRange = '#ff0000'
+
+    // Set up
     const parentDiv = document.querySelector('#gameContainer')
-    const gameDim = { width: 1000, height: 1000 }
+    const gridPadding = GRID_SIZE;
+    const footerPadding = 100;
+    const gameDim = { width: size.width * GRID_SIZE + gridPadding, height: size.height * GRID_SIZE + gridPadding + footerPadding }
 
-    const backgroundDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
 
-    class GridBox extends Driver.ActiveComponent {
-        constructor(x, y, width, height, color) {
+    const backgroundDriver = initDriver(parentDiv, Driver.MODE_PASSIVE, gameDim)
+    backgroundDriver.canvas_ctx.save()
+    backgroundDriver.canvas_ctx.font = '12px Arial'
+
+    let focused = false;
+    let hoveredBox = { x: GRID_SIZE, y: GRID_SIZE }
+
+    class GridBox extends Driver.PassiveComponent {
+        constructor(coords, x, y, width, height, color) {
             super();
-
-            this.active = false;
-
-            this.range = false;
-
             this.borderColor = color;
 
-            this.defaultColor = '#ffffff00';
-            this.color = this.defaultColor;
-
+            this.coords = coords;
             this.x = x;
             this.y = y;
             this.width = width;
             this.height = height;
-
-            this.opacity = 0.5;
-            this.opacityDelta = 0.02;
         }
 
-        update(driver) {
-            const mousePos = driver.mouse_events;
-
-            this.active = inBounds(mousePos, this);
-
-            if (this.active) {
-                this.opacity += this.opacityDelta;
-                if (this.opacity < 0.5 || this.opacity > 1.0) this.opacityDelta = -this.opacityDelta;
+        onMouseEvent = (driver, e) => {
+            if (inBounds({ x: e.offsetX, y: e.offsetY }, this)) {
+                hoveredBox = this;
             }
         }
 
         redraw = driver => {
             const ctx = driver.canvas_ctx;
+            ctx.lineWidth = 1;
             ctx.strokeStyle = this.borderColor
             ctx.strokeRect(this.x, this.y, this.width, this.height)
-
-            if (this.active || this.range) {
-                ctx.strokeStyle = `rgba(255,255,255,${ this.opacity })`
-                ctx.strokeRect(this.x, this.y, this.width, this.height)
-            }
-
-            this.range = false;
         }
     }
 
@@ -67,14 +85,44 @@
     for (let i = 0; i < size.width; i++) {
         grid.push([])
         for (let j = 0; j < size.height; j++) {
-            const gridBox = new GridBox(i * gridSize, j * gridSize, gridSize, gridSize, (i + j) % 2 === 0 ? 'rgba(7,129,0,0.4)' : 'rgba(52,52,52,0.11)');
+            const gridBox = new GridBox({ x: i, y: j }, gridPadding + i * GRID_SIZE, gridPadding + j * GRID_SIZE, GRID_SIZE, GRID_SIZE, (i + j) % 2 === 0 ? 'rgba(7,129,0,0.4)' : 'rgba(52,52,52,0.11)');
 
             grid[i].push(gridBox)
             backgroundDriver.components.push(gridBox)
         }
     }
 
+    // Grid labels
+    backgroundDriver.components.push(new class extends Driver.PassiveComponent{
+        redraw = driver => {
+            driver.canvas_ctx.textAlign = 'center'
+
+            // Selected position
+            const pos = selectedTank.player.position;
+
+            for (let i = 0; i < game.size.height; i++) {
+                driver.canvas_ctx.fillStyle = pos.y === i ? c_gridLabelSelected : c_gridLabel
+                driver.canvas_ctx.fillText(`${ i + 1 }`, GRID_SIZE / 2, i * GRID_SIZE + GRID_SIZE / 2 + gridPadding)
+            }
+            for (let i = 0; i < game.size.width; i++) {
+                driver.canvas_ctx.fillStyle = pos.x === i ? c_gridLabelSelected : c_gridLabel
+                driver.canvas_ctx.fillText(getChar(i), i * GRID_SIZE + GRID_SIZE / 2 + gridPadding, GRID_SIZE / 2)
+            }
+        }
+    })
+
     const objectDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
+    objectDriver.canvas_ctx.save();
+    objectDriver.canvas_ctx.font = 'bold 13px Uni-Sans'
+
+    let selectedTank = null;
+    const ACTION_STATES = {
+        SELECT: "select",
+        ATK: "attack",
+        MV: "move",
+        GV: "give"
+    }
+    let actionState = ACTION_STATES.SELECT;
 
     class Tank extends Driver.ActiveComponent {
         constructor(player) {
@@ -90,16 +138,21 @@
         }
 
         update(driver) {
-            grid[2][2].active = true;
+            // Player selection
+            if (driver.mouse_events.down) {
+                if (inBounds(driver.mouse_events, this) && actionState === ACTION_STATES.SELECT) {
+                    selectedTank = this;
+                    updateStats()
+                }
+            }
 
-            const range = 3
+            const extents = 2;
+            const range = this.player.range + extents;
             const x = this.player.position.x;
             const y = this.player.position.y;
-            for (let i = Math.max(x - range, 0); i < Math.min(x + range, size.width); i++) {
-                for (let j = Math.max(y - range, 0); j < Math.min(y + range, size.width); j++) {
-                    if (inRange(this.player.position, { x: i, y: j }, range)) {
-                        grid[i][j].active = true;
-                    }
+            for (let i = Math.max(x - range, 0); i <= Math.min(x + range, size.width - 1); i++) {
+                for (let j = Math.max(y - range, 0); j <= Math.min(y + range, size.width - 1); j++) {
+
                 }
             }
         }
@@ -109,7 +162,7 @@
          * @param {string} color
          */
         drawTriangle(ctx, color) {
-            const padding = this.width/6;
+            const padding = this.width / 6;
             const center = { x: this.x + this.width / 2, y: this.y + padding };
             const left = { x: this.x + padding, y: this.y + this.height - padding }
             const right = { x: this.x + this.width - padding, y: this.y + this.height - padding }
@@ -120,26 +173,335 @@
             ctx.lineTo(left.x, left.y)
             ctx.lineTo(center.x, center.y)
             ctx.closePath();
-            ctx.fillStyle = color
-            ctx.fill();
+            ctx.strokeStyle = color
+            ctx.lineWidth = 2
+            ctx.setLineDash([])
+            ctx.stroke();
+            ctx.lineWidth = 1
         }
 
         redraw(driver) {
             const ctx = driver.canvas_ctx;
-            const color = this.player.user_id === game.user_id ? 'rgba(0,255,195,0.77)' : 'rgba(255,65,65,0.58)'
+            const color = this.player.user_id === game.user_id ? 'rgb(0,255,195)' : 'rgb(255,65,65)'
+            ctx.shadowColor = 'transparent'
+
+            // Text
+            ctx.fillStyle = 'white'
+            ctx.textAlign = 'center'
+            ctx.fillText(this.player.name, this.x + this.width / 2, this.y + this.height + 12)
+            ctx.fillText(this.player.health, this.x + this.width / 2, this.y - 10)
+
+            if (selectedTank === this) {
+                ctx.shadowColor = 'white'
+                ctx.shadowBlur = 10;
+
+                // Selection lines
+                ctx.beginPath();
+                ctx.moveTo(gridPadding, this.y + this.height / 2)
+                ctx.lineTo(this.x, this.y + this.height / 2)
+                ctx.moveTo(this.x + this.width, this.y + this.height / 2)
+                ctx.lineTo(gameDim.width, this.y + this.height / 2)
+
+                ctx.moveTo(this.x + this.width / 2, gridPadding)
+                ctx.lineTo(this.x + this.width / 2, this.y)
+                ctx.moveTo(this.x + this.width / 2, this.y + this.height)
+                ctx.lineTo(this.x + this.width / 2, gameDim.height)
+                ctx.setLineDash([])
+                ctx.strokeStyle = 'rgba(14,255,229,0.55)'
+                ctx.stroke()
+
+                // Range
+                ctx.beginPath()
+                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.player.range * this.width + this.width/2, 0, 2 * Math.PI)
+                ctx.strokeStyle = this.player === userPlayer ? c_playerRange : c_enemyRange
+                ctx.setLineDash([ 15, 10 ])
+                ctx.stroke()
+
+                // Give range
+                ctx.beginPath()
+                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, (this.player.range + 1) * this.width + this.width/2, 0, 2 * Math.PI)
+                ctx.strokeStyle = "rgba(88,255,81,0.16)"
+                ctx.setLineDash([ 5, 2 ])
+                ctx.stroke()
+            }
             this.drawTriangle(ctx, color)
         }
     }
 
     game.players.forEach(player => objectDriver.components.push(new Tank(player)))
 
-    backgroundDriver.run(16);
+    const userTank = objectDriver.components.find(tank => tank.player.user_id === game.user_id) // Init selected tank
+    selectedTank = userTank
+
+    const guiDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
+
+    class ActionPopup extends Driver.ActiveComponent {
+        constructor(text, xOffset, textAlign, state) {
+            super();
+
+            this.userTank = userTank
+            this.show = false;
+            this.hover = false;
+            this.selected = false;
+
+            this.yLevel = 75;
+            this.yOffset = 10;
+            this.xOffset = xOffset;
+            this.height = 20;
+
+            this.text = text;
+            this.textAlign = textAlign;
+            this.state = state;
+
+            this.font = `${ this.height }px Uni-Sans`;
+
+            this.bounds = null;
+        }
+
+        update(driver) {
+            this.show = selectedTank.player.user_id === userPlayer.user_id
+
+            const ctx = driver.canvas_ctx;
+
+            ctx.textAlign = this.textAlign
+            ctx.font = this.font
+
+            this.bounds = {
+                x: userTank.x + this.xOffset + userTank.width/2 - ctx.measureText(this.text).actualBoundingBoxLeft - 10,
+                y: userTank.y + this.yLevel - this.yOffset,
+                width: ctx.measureText(this.text).width + 18,
+                height: this.height + this.yOffset*2
+            }
+
+            this.hover = inBounds(driver.mouse_events, this.bounds)
+            focused = this.hover || focused
+
+            if (this.hover && driver.mouse_events.pressed) {
+                actionState = this.state;
+                driver.mouse_events.pressed = false;
+            }
+        }
+
+        redraw(driver) {
+            if (!this.show) return;
+            const ctx = driver.canvas_ctx;
+
+            const x = userTank.x + this.xOffset + userTank.width/2;
+            const y = userTank.y + this.yLevel;
+
+            ctx.textAlign = this.textAlign
+            ctx.textBaseline = 'hanging'
+            ctx.font = this.font
+
+            ctx.fillStyle = this.hover || actionState === this.state ? 'yellow' : 'white'
+            ctx.fillText(this.text, x, y)
+        }
+    }
+
+    const xOffset = 50;
+
+    const moveButton = new ActionPopup("Move", -xOffset - 1, "right", ACTION_STATES.MV)
+    const attackButton = new ActionPopup("Attack", 0, "center", ACTION_STATES.ATK)
+    const giveButton = new ActionPopup("Support", xOffset, "left", ACTION_STATES.GV)
+
+    guiDriver.components.push(moveButton)
+    guiDriver.components.push(attackButton)
+    guiDriver.components.push(giveButton)
+
+    // Action guis
+
+    // Move gui
+    guiDriver.components.push(new class extends Driver.ActiveComponent {
+        constructor() {
+            super();
+
+            this.boxes = [ userTank.box ];
+            this.hintBoxes = [ userTank.box ]
+
+            this.destinations = []
+        }
+
+        getCurrentBox = () => this.boxes[this.boxes.length - 1]
+
+        update(driver) {
+            if (actionState !== ACTION_STATES.MV) return;
+
+            if (driver.mouse_events.pressed) {
+                // Existing spot
+                if (this.destinations.includes(hoveredBox)) {
+                    this.destinations = this.destinations.slice(0, this.destinations.indexOf(hoveredBox))
+                    this.boxes = this.boxes.slice(0, this.boxes.indexOf(this.destinations[this.destinations.length-1]) + 1)
+                    if (this.destinations.length === 0) {
+                        this.boxes = [ userTank.box ];
+                    }
+                    console.log("Remove")
+                    // New spot
+                } else if (!game.players.find(player => coordsEquals(player.position, hoveredBox.coords))) {
+                    if (parallelCoords(this.getCurrentBox().coords, hoveredBox.coords)) {
+                        getPath(this.getCurrentBox().coords, hoveredBox.coords).forEach(c => this.boxes.push(grid[c.x][c.y]))
+                    } else {
+                        const elbowCoords = connectCoords(this.getCurrentBox().coords, hoveredBox.coords);
+
+                        getPath(this.getCurrentBox().coords, elbowCoords).forEach(c => this.boxes.push(grid[c.x][c.y]))
+                        getPath(elbowCoords, hoveredBox.coords).forEach(c => this.boxes.push(grid[c.x][c.y]))
+                    }
+
+                    if (this.boxes.length > userPlayer.actions + 1) {
+                        this.boxes = this.boxes.slice(0, userPlayer.actions + 1)
+                        this.destinations.push(this.getCurrentBox())
+                    } else {
+                        this.destinations.push(hoveredBox)
+                    }
+                }
+            }
+
+            this.hintBoxes = [];
+
+            const elbowCoords = connectCoords(this.getCurrentBox().coords, hoveredBox.coords);
+
+            getPath(this.getCurrentBox().coords, elbowCoords).forEach(c => this.hintBoxes.push(grid[c.x][c.y]))
+            getPath(elbowCoords, hoveredBox.coords).forEach(c => this.hintBoxes.push(grid[c.x][c.y]))
+        }
+
+        redraw(driver) {
+            if (actionState !== ACTION_STATES.MV) return;
+
+            const ctx = driver.canvas_ctx;
+
+            const start = userTank.box
+
+            ctx.strokeStyle = '#ffffff'
+
+            const path = [...this.boxes, ...this.hintBoxes]
+
+            for (let i = 0; i < path.length; i++) {
+                ctx.fillStyle = i < userPlayer.actions + 1 ? 'rgba(101,249,255,0.35)' : 'rgba(255,0,0,0.47)'
+                ctx.fillRect(path[i].x, path[i].y, path[i].width, path[i].height)
+
+                if (this.destinations.includes(path[i])) {
+                    ctx.strokeStyle = 'white'
+                    ctx.strokeRect(path[i].x + GRID_SIZE/4, path[i].y + GRID_SIZE/4, path[i].width - GRID_SIZE/2, path[i].height - GRID_SIZE/2)
+                }
+            }
+
+            actions = userPlayer.actions - path.length + 1
+            updateStats()
+        }
+    })
+
+    // Selection
+    guiDriver.components.push(new class extends Driver.ActiveComponent {
+        constructor() {
+            super();
+            this.animationIndex = 0;
+        }
+
+        update = driver => {
+            this.x = hoveredBox.x;
+            this.y = hoveredBox.y;
+            this.width = GRID_SIZE;
+            this.height = GRID_SIZE;
+
+            this.animationIndex += 0.25;
+            if (this.animationIndex >= 20) this.animationIndex = 0
+        }
+
+        redraw = driver => {
+            if (focused) {
+                focused = false;
+                return
+            }
+
+            const ctx = driver.canvas_ctx;
+
+            ctx.beginPath()
+            if (this.animationIndex < 10) {
+                ctx.moveTo(this.x, this.y)
+                ctx.lineTo(this.x + (this.width / 10) * this.animationIndex, this.y)
+
+                ctx.moveTo(this.x + this.width, this.y + this.height)
+                ctx.lineTo(this.x - (this.width / 10) * this.animationIndex + this.width, this.y + this.height)
+
+                // y
+                ctx.moveTo(this.x + this.width, this.y + (this.height / 10) * (this.animationIndex))
+                ctx.lineTo(this.x + this.width, this.y + this.height)
+
+                ctx.moveTo(this.x, this.y + this.height - (this.width / 10) * (this.animationIndex))
+                ctx.lineTo(this.x, this.y)
+            } else {
+                ctx.moveTo(this.x + (this.width / 10) * (this.animationIndex - 10), this.y)
+                ctx.lineTo(this.x + this.width, this.y)
+
+                ctx.moveTo(this.x + this.width - (this.width / 10) * (this.animationIndex - 10), this.y + this.height)
+                ctx.lineTo(this.x, this.y + this.height)
+
+                // y
+                ctx.moveTo(this.x + this.width, this.y)
+                ctx.lineTo(this.x + this.width, this.y + (this.height / 10) * (this.animationIndex - 10))
+
+                ctx.moveTo(this.x, this.y + this.height)
+                ctx.lineTo(this.x, this.y + this.height - (this.height / 10) * (this.animationIndex - 10))
+            }
+
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'white'
+            ctx.stroke()
+        }
+    })
+
+    backgroundDriver.run(10);
     objectDriver.run(16);
+    guiDriver.run(16)
+
+    updateStats()
+
+    function updateStats() {
+        // Info panel
+        const player = selectedTank.player;
+
+        document.querySelector('#name').innerHTML = player.name
+        document.querySelector('#id').innerHTML = ` &lt${getChar(player.position.y)}${player.position.x + 1}&gt ${ player._id }`
+        document.querySelector('#actions').innerHTML = "Energy: " + player.actions + (actions !== player.actions ? ` (${ actions })` : '')
+        document.querySelector('#health').innerHTML = "Health: " + player.health
+        document.querySelector('#range').innerHTML = "Range: " + player.range
+    }
+
 </script>
+
+<%- include('../../partials/footer.html') %>
 </body>
 
 <style>
-    body {
+    html, body {
         background-color: black;
+        max-height: fit-content;
+        padding-bottom: 40px;
+    }
+
+    .panel {
+        padding: 15px;
+        margin: 15px 30px 15px 15px;
+
+        border: rgba(158, 202, 237, 0.69) solid 1px;
+        box-shadow: 0 0 10px rgba(158, 202, 237, 0.45);
+    }
+
+    #infoPanel {
+        position: absolute;
+        right: 0;
+    }
+
+    #infoPanel h3 {
+        margin-bottom: 0;
+    }
+
+    #infoPanel #id {
+        margin-top: 5px;
+        font-size: 10px;
+        color: #fffc4d;
+    }
+
+    #infoPanel p {
+        color: #b6dad7;
     }
 </style>

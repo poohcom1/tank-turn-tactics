@@ -50,7 +50,7 @@ describe("ActionController: Immediate", () => {
             expect(res.status).toHaveBeenCalledWith(403)
         })
 
-        it("prevent movement to negative coords", async () => {
+        it("prevent movement to negative boxes", async () => {
             req.params = {
                 x: -1,
                 y: mainPlayerData.position.y

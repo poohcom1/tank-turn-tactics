@@ -33,6 +33,11 @@
     src: url("../assets/fonts/Uni Sans Thin.woff2");
 }
 
+@font-face {
+    font-family: 'Uni-Sans';
+    src: url("../assets/fonts/Uni Sans Heavy.woff2");
+    font-weight: bold;
+}
 
 * {
     font-family: var(--main-font), sans-serif;

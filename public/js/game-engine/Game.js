@@ -47,7 +47,7 @@ class Driver {
      * @type {string}
      */
     mode = undefined;
-    
+
     run_loop_obj = undefined;
 
     //----------------------------------------
@@ -58,7 +58,7 @@ class Driver {
     key_events = {};
 
     //----------------------------------------
-    
+
     //external variables -------------------
 
     //push your components here
@@ -67,6 +67,8 @@ class Driver {
     image_cache = {};
     bg_color = "#000000";
     actively_running = false;
+
+    mouse_pressed_time = 0;
 
     constructor(ctx, parent_div, document_handle, mode = Driver.MODE_PASSIVE, bg_color = "#000000"){
         this.canvas_ctx = ctx;
@@ -110,14 +112,20 @@ class Driver {
             })
             this.redraw();
         } else {
-            if(event.type == "mousemove"){
+            this.mouse_events.pressed = false;
+
+            if(event.type === "mousemove"){
                 this.mouse_events.x = event.offsetX;
                 this.mouse_events.y = event.offsetY;
-            } else if (event.type == "mousedown"){
+            } else if (event.type === "mousedown") {
                 this.mouse_events.down = true;
-            } else if (event.type == "mouseup"){
+                this.mouse_events.pressed = true
+            } else if (event.type === "click") {
+                this.mouse_events.click = true
+            } else if (event.type === "mouseup"){
                 this.mouse_events.down = false;
             }
+
         }
     };
 
@@ -157,6 +165,9 @@ class Driver {
         })
 
         this.redraw();
+
+        this.mouse_events.pressed = false;
+        this.mouse_events.click = false;
     }
 
     run = (frame_interval = 16) => {
@@ -235,4 +246,53 @@ function inBounds(pos, bounds) {
 
 function inRange(pos, target, range) {
     return Math.sqrt(Math.pow(target.x - pos.x, 2) + Math.pow(target.y - pos.y, 2)) <= range;
+}
+
+function center(bounds) {
+    return { x: bounds.x + bounds.width/2, y: bounds.y + bounds.height/2}
+}
+
+function parallelCoords(pos1, pos2) {
+    return pos1.x === pos2.x || pos1.y === pos2.y;
+}
+
+function connectCoords(pos1, pos2) {
+    if (Math.abs(pos1.x - pos2.x) > Math.abs(pos1.y - pos2.y)) {
+        return { x: pos2.x , y: pos1.y }
+    } else {
+        return { x: pos1.x , y: pos2.y }
+    }
+}
+
+function coordsEquals(pos1, pos2) {
+    return pos1.x === pos2.x && pos1.y === pos2.y
+}
+
+function getPath(origin, dest) {
+    const axis = origin.y === dest.y ? 'x' : 'y'
+    const nonAxis = origin.x === dest.x ? 'x' : 'y'
+    const direction = dest[axis] - origin[axis] > 0 ? 1 : -1
+
+    const diff = Math.abs(dest[axis] - origin[axis]);
+
+    const coords = []
+
+    for (let i = 1; i <= diff; i++) {
+        const coord = {};
+        coord[axis] = origin[axis] + direction * i;
+        coord[nonAxis] = origin[nonAxis]
+        coords.push(coord)
+    }
+
+    return coords;
+}
+
+function getChar(num) {
+    // Thanks, gooostaw: https://stackoverflow.com/questions/8240637/convert-numbers-to-letters-beyond-the-26-character-alphabet
+    let letters = ''
+    while (num >= 0) {
+        letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[num % 26] + letters
+        num = Math.floor(num / 26) - 1
+    }
+    return letters
 }
