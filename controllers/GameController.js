@@ -97,21 +97,18 @@ module.exports.joinGame = async function (req, res) {
  * @param {number} req.params.gameId Game ID
  * @param res
  */
-module.exports.getGame = function (req, res) {
+module.exports.getGame = async function (req, res) {
     const gameId = req.params.gameId
 
-    let gameObject;
+    try {
+        const game = await Game.findById(gameId).lean();
+        game.players = await Player.find({ game_id: game._id });
+        game.user_id = req.user.id;
 
-    Game.findById(gameId)
-        .then(game =>
-        {
-            gameObject = game;
-            return Player.find({game_id: game.id})
-        })
-        .then(players => {
-            res.json({ game: gameObject, players: players })
-        })
-        .catch(err => res.status(500).send(err))
+        res.json(game)
+    } catch (e) {
+        res.status(500).send(e)
+    }
 }
 
 

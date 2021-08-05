@@ -6,7 +6,7 @@ const { checkPlayer, checkGame } = require("../middlewares/action_middleware.js"
  * Route root: /action
  */
 
-router.post('/:gameId/move/:x/:y', checkPlayer, checkGame, moveRequest);
+router.post('/:gameId/move', checkPlayer, checkGame, moveRequest);
 
 router.post('/:gameId/attack/:targetId', checkPlayer, checkGame, attackRequest);
 

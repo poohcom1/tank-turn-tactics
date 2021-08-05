@@ -136,9 +136,9 @@ class Driver {
             })
             this.redraw();
         } else {
-            if(event.type == "keydown"){
+            if(event.type === "keydown"){
                 this.key_events[event.code] = true;
-            }else if (event.type == "keyup"){
+            }else if (event.type === "keyup"){
                 this.key_events[event.code] = false;
             }
         }

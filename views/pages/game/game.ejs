@@ -25,8 +25,8 @@
 <script type="text/javascript" src="js/game-engine/Game.js"></script>
 
 <script>
-    const game = JSON.parse('<%- JSON.stringify(game) %>')
-    const userPlayer = game.players.find(player => player.user_id === game.user_id)
+    let game = JSON.parse('<%- JSON.stringify(game) %>')
+    let userPlayer = game.players.find(player => player.user_id === game.user_id)
 
     const size = game.size
     const GRID_SIZE = 50;
@@ -47,6 +47,19 @@
     const footerPadding = 100;
     const gameDim = { width: size.width * GRID_SIZE + gridPadding, height: size.height * GRID_SIZE + gridPadding + footerPadding }
 
+    // Fetching
+    function refetch() {
+        return fetch(`/game/${ game._id }`, { method: "GET"})
+        .then(res => res.json())
+        .then(newGame => {
+            console.log(newGame)
+            game = newGame;
+            userPlayer = game.players.find(player => player.user_id === game.user_id)
+            updateTanks()
+            updateStats()
+        })
+        .catch(alert)
+    }
 
     const backgroundDriver = initDriver(parentDiv, Driver.MODE_PASSIVE, gameDim)
     backgroundDriver.canvas_ctx.save()
@@ -129,7 +142,11 @@
             super();
             this.player = player
 
-            this.box = grid[player.position.x][player.position.y];
+            this.move(player.position)
+        }
+
+        move(pos) {
+            this.box = grid[pos.x][pos.y];
 
             this.x = this.box.x;
             this.y = this.box.y;
@@ -228,7 +245,15 @@
         }
     }
 
-    game.players.forEach(player => objectDriver.components.push(new Tank(player)))
+    const tanks = game.players.map(player => new Tank(player))
+    tanks.forEach(t => objectDriver.components.push(t))
+
+    function updateTanks() {
+        tanks.map(tank => {
+            const player = game.players.find(player => player._id === tank.player._id);
+            tank.player = player;
+        })
+    }
 
     const userTank = objectDriver.components.find(tank => tank.player.user_id === game.user_id) // Init selected tank
     selectedTank = userTank
@@ -259,7 +284,7 @@
         }
 
         update(driver) {
-            this.show = selectedTank.player.user_id === userPlayer.user_id
+            this.show = selectedTank.player.user_id === userPlayer.user_id && actionState === ACTION_STATES.SELECT
 
             const ctx = driver.canvas_ctx;
 
@@ -315,16 +340,65 @@
         constructor() {
             super();
 
-            this.boxes = [ userTank.box ];
-            this.hintBoxes = [ userTank.box ]
+            this.confirming = false;
+            this.init()
+        }
 
-            this.destinations = []
+        init() {
+            this.boxes = [ userTank.box ]; // Path from selected grid
+            this.hintBoxes = [ userTank.box ]; // Show path on hover
+
+            this.destinations = [] // Stop points of selected grid
+        }
+
+        confirmMove() {
+            if (this.confirming) return;
+            actionState = ACTION_STATES.SELECT
+
+            // Remove first position (which is the player's current position)
+            const positions = this.boxes.slice(1, this.boxes.length).map(box => box.coords)
+
+            userPlayer.position = positions[positions.length - 1]
+            userTank.move(positions[positions.length - 1])
+
+            this.init()
+            this.confirming = true;
+
+
+            fetch(`/action/${ game._id }/move`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ positions: positions })
+            })
+            .then(() => {
+                console.log("Success!")
+                refetch()
+                this.init()
+                this.confirming = false;
+                console.log(this.boxes)
+            })
+            .catch(() => alert())
         }
 
         getCurrentBox = () => this.boxes[this.boxes.length - 1]
 
         update(driver) {
             if (actionState !== ACTION_STATES.MV) return;
+
+            if (driver.key_events["Enter"]) {
+                this.confirmMove()
+            }
+            if (this.confirming) return;
+
+            if (driver.key_events["Escape"]) {
+                actionState = ACTION_STATES.SELECT
+                this.init()
+                actions = userPlayer.actions
+                updateStats()
+                return;
+            }
 
             if (driver.mouse_events.pressed) {
                 // Existing spot
@@ -334,8 +408,7 @@
                     if (this.destinations.length === 0) {
                         this.boxes = [ userTank.box ];
                     }
-                    console.log("Remove")
-                    // New spot
+                // New spot
                 } else if (!game.players.find(player => coordsEquals(player.position, hoveredBox.coords))) {
                     if (parallelCoords(this.getCurrentBox().coords, hoveredBox.coords)) {
                         getPath(this.getCurrentBox().coords, hoveredBox.coords).forEach(c => this.boxes.push(grid[c.x][c.y]))
@@ -346,6 +419,7 @@
                         getPath(elbowCoords, hoveredBox.coords).forEach(c => this.boxes.push(grid[c.x][c.y]))
                     }
 
+                    // Overflow
                     if (this.boxes.length > userPlayer.actions + 1) {
                         this.boxes = this.boxes.slice(0, userPlayer.actions + 1)
                         this.destinations.push(this.getCurrentBox())
@@ -367,8 +441,6 @@
             if (actionState !== ACTION_STATES.MV) return;
 
             const ctx = driver.canvas_ctx;
-
-            const start = userTank.box
 
             ctx.strokeStyle = '#ffffff'
 
@@ -458,10 +530,11 @@
     function updateStats() {
         // Info panel
         const player = selectedTank.player;
+        const isUser = userTank === selectedTank
 
         document.querySelector('#name').innerHTML = player.name
         document.querySelector('#id').innerHTML = ` &lt${getChar(player.position.y)}${player.position.x + 1}&gt ${ player._id }`
-        document.querySelector('#actions').innerHTML = "Energy: " + player.actions + (actions !== player.actions ? ` (${ actions })` : '')
+        document.querySelector('#actions').innerHTML = "Energy: " + player.actions + (isUser && actions !== player.actions ? ` (${ actions })` : '')
         document.querySelector('#health').innerHTML = "Health: " + player.health
         document.querySelector('#range').innerHTML = "Range: " + player.range
     }

@@ -25,66 +25,66 @@ const defaultGameImmediate = {
 }
 
 describe("ActionController: Immediate", () => {
-    describe("move", () => {
-        let mainPlayer;
-        let req;
-        beforeEach(async () => {
-            mainPlayer = await new Player(mainPlayerData).save();
-
-            req = {
-                player: mainPlayer,
-                game: defaultGameImmediate
-            }
-        })
-
-        it("prevent movement outside of range", async () => {
-            req.params = {
-                x: mainPlayerData.position.x + mainPlayerData.range + 1,
-                y: mainPlayerData.position.y
-            }
-
-            const { res } = getMockRes();
-
-            await moveRequest(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(403)
-        })
-
-        it("prevent movement to negative boxes", async () => {
-            req.params = {
-                x: -1,
-                y: mainPlayerData.position.y
-            }
-            req.game = defaultGameImmediate
-
-            const { res } = getMockRes();
-
-            await moveRequest(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(403)
-        })
-
-        it("prevent movement outside of grid", async () => {
-            const playerOnGridEdge = new Player({
-                ...mainPlayerData,
-                range: 100
-            })
-
-            req = {
-                params: {
-                    x: defaultGameImmediate.size.width,
-                    y: mainPlayerData.position.y
-                },
-                game: defaultGameImmediate
-            }
-
-            const { res } = getMockRes();
-
-            await moveRequest({ ...req, player: playerOnGridEdge }, res);
-
-            expect(res.status).toHaveBeenCalledWith(403)
-        })
-    })
+    // describe("move", () => {
+    //     let mainPlayer;
+    //     let req;
+    //     beforeEach(async () => {
+    //         mainPlayer = await new Player(mainPlayerData).save();
+    //
+    //         req = {
+    //             player: mainPlayer,
+    //             game: defaultGameImmediate
+    //         }
+    //     })
+    //
+    //     it("prevent movement outside of range", async () => {
+    //         req.params = {
+    //             x: mainPlayerData.position.x + mainPlayerData.range + 1,
+    //             y: mainPlayerData.position.y
+    //         }
+    //
+    //         const { res } = getMockRes();
+    //
+    //         await moveRequest(req, res);
+    //
+    //         expect(res.status).toHaveBeenCalledWith(403)
+    //     })
+    //
+    //     it("prevent movement to negative boxes", async () => {
+    //         req.params = {
+    //             x: -1,
+    //             y: mainPlayerData.position.y
+    //         }
+    //         req.game = defaultGameImmediate
+    //
+    //         const { res } = getMockRes();
+    //
+    //         await moveRequest(req, res);
+    //
+    //         expect(res.status).toHaveBeenCalledWith(403)
+    //     })
+    //
+    //     it("prevent movement outside of grid", async () => {
+    //         const playerOnGridEdge = new Player({
+    //             ...mainPlayerData,
+    //             range: 100
+    //         })
+    //
+    //         req = {
+    //             params: {
+    //                 x: defaultGameImmediate.size.width,
+    //                 y: mainPlayerData.position.y
+    //             },
+    //             game: defaultGameImmediate
+    //         }
+    //
+    //         const { res } = getMockRes();
+    //
+    //         await moveRequest({ ...req, player: playerOnGridEdge }, res);
+    //
+    //         expect(res.status).toHaveBeenCalledWith(403)
+    //     })
+    // })
 
     describe("attack", () => {
         let mainPlayer;
