@@ -210,7 +210,7 @@ module.exports.deleteGame = async function (req, res) {
         await Player.deleteMany({ game_id: gameId })
         await Game.findByIdAndDelete(gameId)
 
-        res.send(200)
+        res.sendStatus(200)
     } catch (e) {
         res.send(e)
     }

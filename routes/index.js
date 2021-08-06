@@ -6,10 +6,9 @@ const { getUserGames } = require("../controllers/GameController.js");
 
 // Pages
 router.get('/', async (req, res) => {
-    const games = await getUserGames(req.user.id)
-
-
     if (req.isAuthenticated()) {
+        const games = await getUserGames(req.user.id)
+
         res.render('pages/index', { user: req.user.email, games: games })
     } else {
         res.redirect('/login')
