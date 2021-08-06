@@ -3,6 +3,10 @@ const { checkRange, checkGrid } = require('../libs/game_utils.js')
 // All routes to game will have req.game and req.player
 const Player = require("../models/PlayerModel.js");
 
+function isAdjacent(pos1, pos2) {
+    return (Math.abs(pos1.x - pos2.x) === 1 || Math.abs(pos1.y - pos2.y) === 1) && !(pos1.x === pos2.x && pos1.y === pos2.y)
+}
+
 /**
  *
  * @param {Object} game
@@ -11,13 +15,29 @@ const Player = require("../models/PlayerModel.js");
  * @return {Promise<{message: string, status: number}>}
  */
 async function move(game, player, data) {
-    const position = data.position;
+    const positions = data.positions;
 
-    if (checkGrid(position, game) && checkRange(player.position, position, 1)) {
+    if (positions.length > player.actions) {
+        return { status: 403, message: 'Not enough actions' }
+    }
+
+    for (let i = 1; i < positions.length; i++) {
+        if (!isAdjacent(positions[i-1], positions[i])) {
+            return { status: 403, message: 'Positions not adjacent' }
+        }
+    }
+
+    const position = positions[positions.length - 1]
+
+    if (checkGrid(position, game)) {
+        if ( ( await Player.find({ position: positions }) ).length !== 0 ) {
+            return { status: 403, message: 'Collision with another player' };
+        }
+
         try {
             player.position.x = position.x;
             player.position.y = position.y;
-            player.actions--;
+            player.actions -= positions.length;
 
             await player.save();
         } catch (e) {
@@ -77,19 +97,30 @@ async function attack(game, player, data) {
  */
 async function upgrade(game, player, data) {
     const UPGRADES = ["range", "sight", "health"]
+    const COST = {
+        health: 2,
+        range: 1,
+        sight: 1
+    }
 
     if (!UPGRADES.includes(data.upgrade)) {
         return { status: 403, message: 'Unknown upgrade'}
     }
 
     try {
-        player[data.upgrade]++;
+        player[data.upgrade] += parseInt(data.count);
 
-        player.actions--;
+        player.actions -= COST[data.upgrade] * parseInt(data.count);
+
+        if (player.actions < 0) {
+            return { status: 501, message: "Not enough energy"}
+        }
+
         await player.save()
 
         return { status: 200, message: 'ok'}
     } catch (e) {
+        console.log(e)
         return { status: 501, message: e}
     }
 }
@@ -146,10 +177,11 @@ async function logAction(game, playerId, action, data, type) {
 
 async function moveRequest(req, res) {
     if (!req.game.doActionQueue) {
-        const result = await move(req.game, req.player,{ position: req.params });
+        const result = await move(req.game, req.player, req.body);
 
         await logAction(req.game, req.player._id, 'move', req.body, 'actionLog')
 
+        if (result.status !== 200) console.log(result.message)
         res.status(result.status).send(result.message)
     } else {
         const success = await logAction(req.game, req.player._id,  'move', req.body, 'actions')
@@ -183,13 +215,13 @@ async function attackRequest(req, res) {
 
 async function upgradeRequest (req, res) {
     if (!req.game.doActionQueue) {
-        const result = await upgrade(req.game, req.player, { upgrade: req.params.upgrade });
+        const result = await upgrade(req.game, req.player, { upgrade: req.params.upgrade, count: req.params.count });
 
-        await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade }, 'actionLog')
+        await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade, count: req.params.count }, 'actionLog')
 
         res.status(result.status).send(result.message)
     } else {
-        const success = await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade }, 'actions')
+        const success = await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade, count: req.params.count }, 'actions')
 
         if (success) {
             res.status(200).send('ok')

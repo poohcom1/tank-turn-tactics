@@ -110,7 +110,7 @@ class Driver {
     }
 
     run = (frame_interval) => {
-        if(this.mode = Driver.MODE_ACTIVE){
+        if(this.mode === Driver.MODE_ACTIVE){
             setInterval(this.update, frame_interval);
         }
     }
@@ -122,7 +122,7 @@ class Driver {
 };
 
 class TestGameObject {
-    picture = "/test2.jpg";
+    picture = "/assets/test2.jpg";
     x = 200;
     y = 0;
 
@@ -153,7 +153,7 @@ class TestGameObject {
 }
 
 class Ball {
-    picture = "/ball.jpg";
+    picture = "/assets/ball.jpg";
     x = 300;
     y = 0;
     dy = 10;
@@ -180,7 +180,7 @@ class Ball {
 }
 
 class PassiveYuri {
-    picture = "/test.jpg";
+    picture = "/assets/test.jpg";
     x = 0;
     y = 0;
 
@@ -220,7 +220,7 @@ class PassiveYuri {
 
     let driver = new Driver(ctx, parent_div, document, Driver.MODE_ACTIVE, Driver.TRANSPARENT);
 
-    let images = ['/test.jpg', '/test2.jpg', '/ball.jpg'];
+    let images = ['/assets/test.jpg', '/assets/test2.jpg', '/assets/ball.jpg'];
 
     let promises = driver.imagePreload(images);
     await promises;
