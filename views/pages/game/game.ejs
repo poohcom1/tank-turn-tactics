@@ -399,8 +399,9 @@
 
     const guiDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
 
-    if (userTank) {
+    let moveGui, attackGui, giveGui, actionGuis;
 
+    if (userTank) {
         class ActionPopup extends Driver.ActiveComponent {
             constructor(text, xOffset, textAlign, state, color = '#fcda6d') {
                 super();
@@ -489,7 +490,7 @@
         // Action guis
 
         // Move gui
-        const moveGui = new class extends Driver.ActiveComponent {
+        moveGui = new class extends Driver.ActiveComponent {
             constructor() {
                 super();
 
@@ -560,9 +561,7 @@
                     COLLIDE: 5
                 }
 
-                let moveType = ""
-
-                const pathToAdd = []
+                let moveType;
 
                 // Existing spot
                 if (this.destinations.includes(hoveredBox)) {
@@ -774,7 +773,7 @@
         }
 
         // Attack gui
-        const attackGui = new class extends Driver.ActiveComponent {
+        attackGui = new class extends Driver.ActiveComponent {
             constructor(props) {
                 super(props);
                 /**
@@ -927,7 +926,7 @@
         }
 
         // Give gui
-        const giveGui = new class extends Driver.ActiveComponent {
+        giveGui = new class extends Driver.ActiveComponent {
             constructor(props) {
                 super(props);
                 /**
@@ -1032,7 +1031,6 @@
 
                 const innerRadius = 5;
                 const outerRadius = 17;
-                const lineLength = 5;
 
                 ctx.beginPath()
                 ctx.arc(center(box).x, center(box).y, innerRadius, 0, 2 * Math.PI)
@@ -1064,7 +1062,7 @@
             }
         }
 
-        const actionGuis = [ moveGui, attackGui, giveGui ]
+        actionGuis = [ moveGui, attackGui, giveGui ]
 
        guiDriver.components.push(...actionGuis)
     }
@@ -1076,7 +1074,7 @@
             this.animationIndex = 0;
         }
 
-        update = driver => {
+        update = () => {
             this.x = hoveredBox.x;
             this.y = hoveredBox.y;
             this.width = GRID_SIZE;
@@ -1256,7 +1254,7 @@
             fetch(`/action/${ game._id }/upgrade/${ k }/count/${ actionsToAdd[k] }`, { method: 'POST' })
         )
 
-        Promise.all(fetchPromises).then(res => {
+        Promise.all(fetchPromises).then(() => {
             updateStats()
             enableUpgrades()
             refetch()
