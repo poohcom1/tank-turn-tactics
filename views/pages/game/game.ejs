@@ -75,6 +75,7 @@
                 console.log(newGame)
                 game = newGame;
                 userPlayer = game.players.find(player => player.user_id === game.user_id)
+                actions = userPlayer.actions
                 updateTanks()
                 updateStats()
                 actionGuis.forEach(gui => gui.init())
@@ -653,8 +654,8 @@
                     }
 
                     const angle = angleTo(hoveredBox, tank.box)
-                    const origin = vecToPoint(5, angle - Math.PI/2)
-                    const arrowHead = vecToPoint(arrowHeadLength, angle - Math.PI/2 - Math.PI/4)
+                    const origin = vecToPoint(5, angle - Math.PI / 2)
+                    const arrowHead = vecToPoint(arrowHeadLength, angle - Math.PI / 2 - Math.PI / 4)
 
                     ctx.beginPath()
                     ctx.moveTo(center(hoveredBox).x + origin.x, center(hoveredBox).y + origin.y)
@@ -678,8 +679,8 @@
                     }
 
                     const angle = angleTo(hoveredBox, tank.box)
-                    const origin = vecToPoint(2, angle + Math.PI/2)
-                    const arrowHead = vecToPoint(arrowHeadLength, angle + Math.PI/4)
+                    const origin = vecToPoint(2, angle + Math.PI / 2)
+                    const arrowHead = vecToPoint(arrowHeadLength, angle + Math.PI / 4)
 
                     ctx.beginPath()
                     ctx.moveTo(center(tank.box).x + origin.x, center(tank.box).y + origin.y)
@@ -703,6 +704,7 @@
             this.targets = [];
             this.hoverOnSelectedTarget = false;
             this.init();
+            this.confirming = false;
         }
 
         init() {
@@ -716,20 +718,35 @@
             this.selectedTarget = null;
         }
 
+        confirm() {
+            console.log("Attacking...")
+            fetch(`/action/${ game._id }/attack/${ this.selectedTarget.player._id }`, { method: 'POST' })
+                .then(() => {
+                    console.log("Attack success")
+                    refetch()
+                    this.cancel()
+                    this.confirming = false;
+                })
+        }
+
         cancel() {
             this.init();
             actionState = ACTION_STATES.SELECT
         }
 
         update(driver) {
-            if (actionState !== ACTION_STATES.ATK) return;
+            if (actionState !== ACTION_STATES.ATK || this.confirming) return;
+
+            updateStats()
+
+            actions = userPlayer.actions
 
             if (driver.key_pressed["Escape"]) this.cancel()
 
             const ATTACK = {
                 NONE: -1,
                 HOVER: 0,
-                SELECTED: 1
+                ATTACK: 1
             }
 
             let attackState = ATTACK.NONE
@@ -748,6 +765,9 @@
                 if (this.selectedTarget === hoverTarget) {
                     updateHint("Attack", "Click to commence attack on target", c_atkMarkedTarget)
                     this.hoverOnSelectedTarget = true;
+                    actions = userPlayer.actions - 1
+                    updateStats()
+                    attackState = ATTACK.ATTACK
                 } else {
                     updateHint("Attack", "Click to remove mark")
                     attackState = ATTACK.NONE
@@ -762,6 +782,11 @@
                         break;
                     case ATTACK.HOVER:
                         this.selectedTarget = hoverTarget;
+                        break;
+                    case ATTACK.ATTACK:
+                        this.confirm();
+                        this.confirming = true;
+                        selectedTank = this.selectedTarget
                         break;
                     default:
                 }
