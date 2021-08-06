@@ -159,6 +159,8 @@ button:focus {
 input {
     color: var(--input-text);
 
+    width: 200px;
+    font-size: 13px;
     margin: 5px;
     border: 0;
     outline: 0;

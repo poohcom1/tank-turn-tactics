@@ -35,9 +35,9 @@ async function distributeActions(game) {
         game.turnTimePassed++;
     }
 
-    if (game.doActionQueue) {
-        await doActionQueue(game)
-    }
+    // if (game.doActionQueue) {
+    //     await doActionQueue(game)
+    // }
 
     await game.save();
 }

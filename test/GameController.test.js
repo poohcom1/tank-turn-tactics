@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 const { getMockReq, getMockRes } = require('@jest-mock/express')
 const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
-const { createGame, startGame, deleteGame, getUserGames, getAllGames } = require('../controllers/GameController.js')
+const { createGame, startGame, deleteGame, getAllGames, getUserGamesRequest } = require('../controllers/GameController.js')
 
 DBHandler.setup();
 
@@ -218,7 +218,7 @@ describe("GameController", () => {
 
            const { res } = getMockRes();
 
-           await getUserGames({ user: { id: currentUserId }}, res);
+           await getUserGamesRequest({ user: { id: currentUserId }}, res);
 
            expect(res.json.mock.calls[0][0]).toHaveLength(gamesToGenerate);
        })
@@ -233,7 +233,7 @@ describe("GameController", () => {
 
            const { res } = getMockRes();
 
-           await getUserGames({ user: { id: currentUserId }}, res);
+           await getUserGamesRequest({ user: { id: currentUserId }}, res);
 
            expect(res.json.mock.calls[0][0][0].players).toHaveLength(playerToAdd + 1); // Include the creator
        })

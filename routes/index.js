@@ -2,11 +2,14 @@ const router = require('express').Router()
 const { isLoggedIn, isAdmin } = require('../middlewares/auth_middleware.js')
 const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
+const { getUserGames } = require("../controllers/GameController.js");
 
 // Pages
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
     if (req.isAuthenticated()) {
-        res.render('pages/index', { user: req.user.email })
+        const games = await getUserGames(req.user.id)
+
+        res.render('pages/index', { user: req.user.email, games: games })
     } else {
         res.redirect('/login')
     }

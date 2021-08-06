@@ -9,13 +9,13 @@
         <h2>Welcome, <%= user %></h2>
         <h3>Games:</h3>
         <div id="tableContainer">
-            <div id="gameTable"></div>
+            <div id="gameTable" class="table--slide-down"></div>
         </div>
     </div>
 </div>
 
 <script>
-    generateGamesTable('#gameTable').then(() => document.querySelector('#tableContainer').classList.add('table--slide-down'))
+    generateGamesTable('#gameTable', JSON.parse('<%- JSON.stringify(games) %>'))
 </script>
 
 </body>
