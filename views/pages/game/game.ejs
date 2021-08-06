@@ -22,6 +22,11 @@
     <p id="kills"></p>
 </div>
 
+<div id="hintPanel" class="panel">
+    <h3></h3>
+    <p></p>
+</div>
+
 <script type="text/javascript" src="js/game-engine/Game.js"></script>
 
 <script>
@@ -73,7 +78,7 @@
     backgroundDriver.canvas_ctx.font = '12px Arial'
 
     let focused = false;
-    let hoveredBox = { x: GRID_SIZE, y: GRID_SIZE }
+    let hoveredBox = { x: GRID_SIZE, y: GRID_SIZE, coords: { x: 0, y: 0 } }
 
     class GridBox extends Driver.PassiveComponent {
         constructor(coords, x, y, width, height, color) {
@@ -358,6 +363,7 @@
         constructor() {
             super();
 
+
             this.confirming = false;
             this.init()
         }
@@ -419,47 +425,90 @@
                 this.cancel()
             }
 
+            const MOVE = {
+                CONFIRM: 0,
+                REMOVE: 1,
+                ADD: 2,
+                RESET: 3,
+                CANCEL: 4,
+                COLLIDE: 5
+            }
+
+            let moveType = ""
+
+
+            // Existing spot
+            if (this.destinations.includes(hoveredBox)) {
+                // Final spot
+                if (this.destinations.indexOf(hoveredBox) === this.destinations.length - 1) {
+                    updateHint("Move", "Press 'Enter' or click again to commit movement")
+                    moveType = MOVE.CONFIRM
+                } else {
+                    updateHint("Move", "Click to remove succeeding waypoints")
+                    moveType = MOVE.REMOVE
+                }
+
+                // Reset
+            } else if (hoveredBox === userTank.box) {
+                if (this.boxes.length === 1) {
+                    updateHint("Move", "Press 'Escape' or click to cancel movement")
+                    moveType = MOVE.CANCEL
+                } else {
+                    updateHint("Move", "Click to remove succeeding waypoints")
+                    moveType = MOVE.RESET
+                }
+                // New spot
+            } else {
+                if (!game.players.find(player => coordsEquals(player.position, hoveredBox.coords))) {
+                    updateHint("Move", "Click to add waypoint")
+                    moveType = MOVE.ADD;
+                } else {
+                    updateHint("Move", "Can't move there!")
+                    moveType = MOVE.COLLIDE;
+                }
+            }
+
+
             if (driver.mouse_events.pressed) {
-                // Existing spot
-                if (this.destinations.includes(hoveredBox)) {
-                    // Final spot
-                    if (this.destinations.indexOf(hoveredBox) === this.destinations.length - 1) {
-                        this.confirmMove()
-                    } else {
+                switch (moveType) {
+                    case MOVE.ADD:
+                        // Parallel position
+                        if (parallelCoords(this.getCurrentBox().coords, hoveredBox.coords)) {
+                            getPath(this.getCurrentBox().coords, hoveredBox.coords).forEach(c => this.boxes.push(grid[c.x][c.y]))
+                        } else {
+                            // Elbow position
+                            const elbowCoords = connectCoords(this.getCurrentBox().coords, hoveredBox.coords);
+
+                            getPath(this.getCurrentBox().coords, elbowCoords).forEach(c => this.boxes.push(grid[c.x][c.y]))
+                            getPath(elbowCoords, hoveredBox.coords).forEach(c => this.boxes.push(grid[c.x][c.y]))
+                        }
+
+                        // Overflow
+                        if (this.boxes.length > userPlayer.actions + 1) {
+                            this.boxes = this.boxes.slice(0, userPlayer.actions + 1)
+                            this.destinations.push(this.getCurrentBox())
+                        } else {
+                            this.destinations.push(hoveredBox)
+                        }
+                        break;
+                    case MOVE.RESET:
+                        this.init()
+                        break;
+                    case MOVE.CANCEL:
+                        this.cancel()
+                        break;
+                    case MOVE.CONFIRM:
+                        this.confirmMove();
+                        break;
+                    case MOVE.REMOVE:
                         this.destinations = this.destinations.slice(0, this.destinations.indexOf(hoveredBox) + 1)
                         this.boxes = this.boxes.slice(0, this.boxes.indexOf(this.destinations[this.destinations.length - 1]) + 1)
                         if (this.destinations.length === 0) {
                             this.boxes = [ userTank.box ];
                         }
-                    }
-                    // New spot
-                } else if (!game.players.find(player => coordsEquals(player.position, hoveredBox.coords))) {
-                    // Parallel position
-                    if (parallelCoords(this.getCurrentBox().coords, hoveredBox.coords)) {
-                        getPath(this.getCurrentBox().coords, hoveredBox.coords).forEach(c => this.boxes.push(grid[c.x][c.y]))
-                    } else {
-                        // Elbow position
-                        const elbowCoords = connectCoords(this.getCurrentBox().coords, hoveredBox.coords);
-
-                        getPath(this.getCurrentBox().coords, elbowCoords).forEach(c => this.boxes.push(grid[c.x][c.y]))
-                        getPath(elbowCoords, hoveredBox.coords).forEach(c => this.boxes.push(grid[c.x][c.y]))
-                    }
-
-                    // Overflow
-                    if (this.boxes.length > userPlayer.actions + 1) {
-                        this.boxes = this.boxes.slice(0, userPlayer.actions + 1)
-                        this.destinations.push(this.getCurrentBox())
-                    } else {
-                        this.destinations.push(hoveredBox)
-                    }
-                    // Reset
-                } else if (hoveredBox === userTank.box) {
-                    if (this.boxes.length === 1) {
-                        this.cancel()
-                    } else {
-                        this.init()
-                    }
+                        break;
                 }
+
             }
 
             this.hintBoxes = [];
@@ -509,6 +558,8 @@
                 // Fill path boxes' color
                 if (onDest || hoveredBox === userTank.box) {
                     ctx.fillStyle = c_moveCancel
+                } else if (game.players.find(player => coordsEquals(player.position, hoveredBox.coords))) {
+                    ctx.fillStyle = c_moveOutOfRange
                 } else {
                     ctx.fillStyle = i < userPlayer.actions + 1 ? c_moveBlock : c_moveOutOfRange
                 }
@@ -528,7 +579,7 @@
                     // If current box is the hovered box and it's not the final destination (in which we confirm instead of cancel)
                     //  or its the first box
                     if ((hoveredBox === path[i] && this.destinations.indexOf(path[i]) !== this.destinations.length - 1)
-                    || hoveredBox === userTank.box) {
+                        || hoveredBox === userTank.box) {
                         onDest = true;
                     }
                 }
@@ -540,6 +591,11 @@
             actions = userPlayer.actions - path.length + 1
             updateStats()
         }
+    })
+
+    // Attack gui
+    guiDriver.components.push(new class extends Driver.ActiveComponent {
+
     })
 
     // Selection
@@ -557,6 +613,9 @@
 
             this.animationIndex += 0.25;
             if (this.animationIndex >= 20) this.animationIndex = 0
+
+            if (actionState === ACTION_STATES.SELECT) updateHint("Coordinates", `${ getChar(hoveredBox.coords.x) }${ hoveredBox.coords.y + 1 }`)
+
         }
 
         redraw = driver => {
@@ -628,6 +687,16 @@
         document.querySelector('#range').innerHTML = "Range: " + player.range
     }
 
+    function updateHint(title, text) {
+        if (!title) {
+            document.querySelector('#hintPanel').style.display = 'none';
+        }
+
+        document.querySelector('#hintPanel').style.display = 'block';
+        document.querySelector('#hintPanel h3').innerHTML = title;
+        document.querySelector('#hintPanel p').innerHTML = text;
+    }
+
 </script>
 
 <%- include('../../partials/footer.html') %>
@@ -665,5 +734,22 @@
 
     #infoPanel p {
         color: #b6dad7;
+    }
+
+    #hintPanel {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        display: none;
+
+        z-index: 300;
+    }
+
+    #hintPanel h3 {
+        margin-bottom: 0;
+    }
+
+    #hintPanel p {
+        margin-top: 5px;
     }
 </style>
