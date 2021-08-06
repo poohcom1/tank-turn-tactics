@@ -50,6 +50,7 @@
     game.players = game.players.filter(p => p.health > 0)
 
     let gameOver = false;
+    const isDead = userPlayer.health <= 0;
 
     if (game.players.filter(player => player.health > 0).length <= 1) {
         gameOver = true;
@@ -92,8 +93,9 @@
     const parentDiv = document.querySelector('#gameContainer')
     const gridPadding = GRID_SIZE * 2;
     const footerPadding = 100;
+    const rightPadding = 300;
     const gameDim = {
-        width: size.width * GRID_SIZE + gridPadding,
+        width: size.width * GRID_SIZE + gridPadding + rightPadding,
         height: size.height * GRID_SIZE + gridPadding + footerPadding
     }
 
@@ -302,7 +304,7 @@
                 ctx.moveTo(gridPadding, this.y + this.height / 2)
                 ctx.lineTo(this.x, this.y + this.height / 2)
                 ctx.moveTo(this.x + this.width, this.y + this.height / 2)
-                ctx.lineTo(gameDim.width, this.y + this.height / 2)
+                ctx.lineTo(gameDim.width - rightPadding, this.y + this.height / 2)
 
                 ctx.moveTo(this.x + this.width / 2, gridPadding)
                 ctx.lineTo(this.x + this.width / 2, this.y)
@@ -366,7 +368,12 @@
     function updateTanks() {
         tanks.map(tank => {
             const player = game.players.find(player => player._id === tank.player._id);
-            tank.refetch(player)
+            if (player) {
+                tank.refetch(player)
+            } else {
+                objectDriver.components.splice(objectDriver.components.indexOf(tank), 1)
+                tanks.splice(objectDriver.components.indexOf(tank), 1)
+            }
         })
     }
 
@@ -1261,7 +1268,7 @@
     }
 
     #infoPanel {
-        position: absolute;
+        position: fixed;
         right: 0;
     }
 

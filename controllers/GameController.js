@@ -29,7 +29,8 @@ module.exports.createGame = async (req, res) => {
         await new Player({
             user_id: req.user.id,
             game_id: gameId,
-            name: req.body.displayName !== '' ? req.body.displayName : req.user.email
+            name: req.body.displayName !== '' ? req.body.displayName : req.user.email,
+            actions: gameCfg.actionsPerInterval
         }).save()
 
         res.redirect(`/play?game=${ gameId }`)
@@ -163,21 +164,25 @@ module.exports.getPlayers = async function (req, res) {
 
 // GET routes
 
-/**
- * Get all games belonging to the current user
- * @param req
- * @param res
- */
-module.exports.getUserGames = async function (req, res) {
-    const userId = req.user.id;
-
+async function getUserGames(userId) {
     const userPlayerList = await Player.find({ user_id: mongoose.Types.ObjectId(userId) })
 
     const gameList = await Promise.all(
         userPlayerList.map( player => Game.findById(player.game_id).lean() )
     )
 
-    res.json(await joinGamesWithPlayer(gameList));
+    return await joinGamesWithPlayer(gameList)
+}
+
+module.exports.getUserGames = getUserGames
+
+/**
+ * Get all games belonging to the current user
+ * @param req
+ * @param res
+ */
+module.exports.getUserGamesRequest = async function (req, res) {
+    res.json(await getUserGames(req.user.id));
 }
 
 /**

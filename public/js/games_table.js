@@ -16,57 +16,55 @@ function dateDiffInDays(a, b) {
 
 function formatDate(d) {
     try {
-        return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+        return `${ d.getFullYear() }-${ d.getMonth() + 1 }-${ d.getDate() }`;
     } catch (e) {
         return d
     }
 }
 
-function generateGamesTable(tableQuery) {
+function generateGamesTable(tableQuery, gameObjects) {
     // Generate games table
-    return fetch('/game', { method: 'GET'})
-        .then(res => res.json())
-        .then(games => {
-            let table = document.querySelector(tableQuery);
+    const games = gameObjects
+    let table = document.querySelector(tableQuery);
 
-            if (table.length) table = table[0];
+    if (table.length) table = table[0];
 
-            const tableHeaders = ['Game', 'Players', 'State']
+    const tableHeaders = [ 'Game', 'Players', 'State' ]
 
-            const tableRows = games.map(game => {
-                const gameLink = document.createElement("a");
-                gameLink.href = "/play?game=" + game._id
-                gameLink.innerHTML = game.name;
+    const tableRows = games.map(game => {
+        const gameLink = document.createElement("a");
+        gameLink.href = "/play?game=" + game._id
+        gameLink.innerHTML = game.name;
 
-                let message = 'Day ' + dateDiffInDays(new Date(), new Date(game.startedAt));
+        let message = 'Day ' + dateDiffInDays(new Date(), new Date(game.startedAt));
 
-                if (!game.hasStarted) {
-                    message = 'Lobby'
-                }
+        if (!game.hasStarted) {
+            message = 'Lobby'
+        }
 
-                if (game.players.filter(p => p.health > 0).length <= 1) {
-                    message = 'Finished'
-                }
+        if (game.players.filter(p => p.health > 0).length <= 1) {
+            message = 'Finished'
+        }
 
-                return [
-                    gameLink,
-                    game.players.length,
-                    message
-                ];
-            });
+        return [
+            gameLink,
+            game.players.length,
+            message
+        ];
+    });
 
-            createTable(table, tableHeaders, tableRows)
-        })
+    createTable(table, tableHeaders, tableRows)
+
 }
 
 function generateAdminTable(tableQuery) {
     // Generate games table
-    fetch('/game/all', { method: 'GET'})
+    fetch('/game/all', { method: 'GET' })
         .then(res => res.json())
         .then(games => {
             let table = document.querySelector(tableQuery);
 
-            const tableHeaders = ['Game', 'Players', 'State', 'Creator ID', 'Created', 'Updated', 'Remove']
+            const tableHeaders = [ 'Game', 'Players', 'State', 'Creator ID', 'Created', 'Updated', 'Remove' ]
 
             const tableRows = games.map(game => {
                 const gameLink = document.createElement("button");
@@ -87,8 +85,8 @@ function generateAdminTable(tableQuery) {
                 const deleteButton = document.createElement("button")
                 deleteButton.innerHTML = "Delete"
 
-                deleteButton.onclick = function(e) {
-                    fetch('/game/' + game._id, { method: 'DELETE'} ).then(res => {
+                deleteButton.onclick = function (e) {
+                    fetch('/game/' + game._id, { method: 'DELETE' }).then(res => {
                         console.log(res)
                         location.reload()
                     }).catch(err => console.log(err))
