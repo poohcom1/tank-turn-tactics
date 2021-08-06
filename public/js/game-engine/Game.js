@@ -56,6 +56,7 @@ class Driver {
 
     mouse_events = {};
     key_events = {};
+    key_pressed = {}
 
     //----------------------------------------
 
@@ -67,8 +68,6 @@ class Driver {
     image_cache = {};
     bg_color = "#000000";
     actively_running = false;
-
-    mouse_pressed_time = 0;
 
     constructor(ctx, parent_div, document_handle, mode = Driver.MODE_PASSIVE, bg_color = "#000000"){
         this.canvas_ctx = ctx;
@@ -138,6 +137,7 @@ class Driver {
         } else {
             if(event.type === "keydown"){
                 this.key_events[event.code] = true;
+                this.key_pressed[event.code] = true;
             }else if (event.type === "keyup"){
                 this.key_events[event.code] = false;
             }
@@ -168,6 +168,7 @@ class Driver {
 
         this.mouse_events.pressed = false;
         this.mouse_events.click = false;
+        this.key_pressed = {};
     }
 
     run = (frame_interval = 16) => {
