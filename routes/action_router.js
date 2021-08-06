@@ -10,7 +10,7 @@ router.post('/:gameId/move', checkPlayer, checkGame, moveRequest);
 
 router.post('/:gameId/attack/:targetId', checkPlayer, checkGame, attackRequest);
 
-router.post('/:gameId/upgrade/:upgrade', checkPlayer, checkGame, upgradeRequest);
+router.post('/:gameId/upgrade/:upgrade/count/:count', checkPlayer, checkGame, upgradeRequest);
 
 router.post('/:gameId/give/:targetId/actions/:count', checkPlayer, checkGame, giveRequest)
 

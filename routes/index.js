@@ -54,6 +54,16 @@ router.get('/play', isLoggedIn, async (req, res) => {
     }
 })
 
+// Footer
+
+router.get('/how-to-play', (req, res) => {
+    res.render("pages/how-to-play")
+})
+
+router.get('/credits', (req, res) => {
+    res.render("pages/credits")
+})
+
 // Admin
 router.get('/admin', isAdmin, async (req, res) => {
     res.render("pages/admin")

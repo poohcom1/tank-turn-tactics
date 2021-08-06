@@ -48,15 +48,16 @@ html {
     margin: 0;
 
     height: 100%;
-
+    width: 100%;
 }
 
 body {
     margin: 0;
+    height: 100%;
+    width: 100%;
     background: url("../assets/gridwallpaper.jpg") black;
     background-size: 100%;
     color: var(--secondary);
-    height: inherit;
 }
 
 
@@ -89,6 +90,7 @@ a {
 a:hover {
     color: white;
     text-shadow: var(--secondary) 0 0 5px;
+    cursor: pointer;
 }
 
 table {
@@ -197,6 +199,10 @@ select {
 
     box-shadow: gray 0 0 15px;
     background-color: var(--card-background);
+}
+
+.section {
+    overflow: hidden;
 }
 
 .container {

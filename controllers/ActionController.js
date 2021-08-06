@@ -97,19 +97,30 @@ async function attack(game, player, data) {
  */
 async function upgrade(game, player, data) {
     const UPGRADES = ["range", "sight", "health"]
+    const COST = {
+        health: 2,
+        range: 1,
+        sight: 1
+    }
 
     if (!UPGRADES.includes(data.upgrade)) {
         return { status: 403, message: 'Unknown upgrade'}
     }
 
     try {
-        player[data.upgrade]++;
+        player[data.upgrade] += parseInt(data.count);
 
-        player.actions--;
+        player.actions -= COST[data.upgrade] * parseInt(data.count);
+
+        if (player.actions < 0) {
+            return { status: 501, message: "Not enough energy"}
+        }
+
         await player.save()
 
         return { status: 200, message: 'ok'}
     } catch (e) {
+        console.log(e)
         return { status: 501, message: e}
     }
 }
@@ -204,13 +215,13 @@ async function attackRequest(req, res) {
 
 async function upgradeRequest (req, res) {
     if (!req.game.doActionQueue) {
-        const result = await upgrade(req.game, req.player, { upgrade: req.params.upgrade });
+        const result = await upgrade(req.game, req.player, { upgrade: req.params.upgrade, count: req.params.count });
 
-        await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade }, 'actionLog')
+        await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade, count: req.params.count }, 'actionLog')
 
         res.status(result.status).send(result.message)
     } else {
-        const success = await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade }, 'actions')
+        const success = await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade, count: req.params.count }, 'actions')
 
         if (success) {
             res.status(200).send('ok')

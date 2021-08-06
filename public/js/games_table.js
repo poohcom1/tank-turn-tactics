@@ -38,10 +38,20 @@ function generateGamesTable(tableQuery) {
                 gameLink.href = "/play?game=" + game._id
                 gameLink.innerHTML = game.name;
 
+                let message = 'Day ' + dateDiffInDays(new Date(), new Date(game.startedAt));
+
+                if (!game.hasStarted) {
+                    message = 'Lobby'
+                }
+
+                if (game.players.filter(p => p.health > 0).length <= 1) {
+                    message = 'Finished'
+                }
+
                 return [
                     gameLink,
                     game.players.length,
-                    game.hasStarted ? 'Day ' + dateDiffInDays(new Date(), new Date(game.startedAt)) : 'Lobby'
+                    message
                 ];
             });
 
