@@ -297,3 +297,14 @@ function getChar(num) {
     }
     return letters
 }
+
+function vecToPoint(distance, angle) {
+    return { x: distance * Math.cos(angle), y: distance * Math.sin(angle)}
+}
+
+function angleTo(source, target) {
+    const dy = target.y - source.y
+    const dx = target.x - source.x
+
+    return Math.atan2(dy, dx)
+}

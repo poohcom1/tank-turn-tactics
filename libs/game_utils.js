@@ -20,14 +20,14 @@ module.exports.assignLocation = function (count, size) {
 }
 
 /**
- *
+ * Must match the function in public/js/game-engine/Game.js
  * @param position
  * @param target
  * @param range
  * @return {boolean}
  */
 module.exports.checkRange = function (position, target, range) {
-    return Math.abs(position.x - target.x) <= range && Math.abs(position.y - target.y) <= range
+    return Math.sqrt(Math.pow(target.x - position.x, 2) + Math.pow(target.y - position.y, 2)) <= range;
 }
 
 module.exports.checkGrid = function (position, game) {
