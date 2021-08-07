@@ -8,6 +8,10 @@
 
 <body>
 
+<div id="statsPanel">
+
+</div>
+
 <div id="gameContainer"></div>
 
 <div id="winScreen" class="panel">
@@ -39,6 +43,7 @@
 <div id="hintPanel" class="panel">
     <h3></h3>
     <p></p>
+    <p id="minorHint"></p>
 </div>
 
 <script type="text/javascript" src="js/game-engine/Game.js"></script>
@@ -85,8 +90,11 @@
 
     const c_atkTarget = '#ffd271'
     const c_atkMarkedTarget = '#ff0000'
+    const c_atkConfirming = 'rgba(255,0,0,0.33)'
 
     const c_giveLine = '#73f56b'
+    const c_giveConfirming = 'rgba(115,245,107,0.3)'
+
 
     // Set up
     const parentDiv = document.querySelector('#gameContainer')
@@ -108,7 +116,7 @@
                 userPlayer = game.players.find(player => player.user_id === game.user_id)
                 actions = userPlayer.actions
                 updateTanks()
-                updateStats()
+                updateInfo()
                 actionGuis.forEach(gui => gui.init())
 
                 if (game.players.filter(player => player.health > 0).length <= 1) {
@@ -240,6 +248,8 @@
             // Player selection
             if (driver.mouse_events.pressed) {
                 if (inBounds(driver.mouse_events, this) && actionState === ACTION_STATES.SELECT && !gameOver) {
+                    if (actionPopups.some(action => action.hover)) return
+
                     showPlayerOption = !showPlayerOption
 
                     if (selectedTank !== userTank) {
@@ -255,17 +265,7 @@
                     }
 
                     if (userPlayer.actions <= 0) showPlayerOption = false;
-                    updateStats()
-                }
-            }
-
-            const extents = 2;
-            const range = this.player.range + extents;
-            const x = this.player.position.x;
-            const y = this.player.position.y;
-            for (let i = Math.max(x - range, 0); i <= Math.min(x + range, size.width - 1); i++) {
-                for (let j = Math.max(y - range, 0); j <= Math.min(y + range, size.width - 1); j++) {
-
+                    updateInfo()
                 }
             }
         }
@@ -327,19 +327,19 @@
                 ctx.stroke()
             }
 
-            if ((selectedTank === this || actionState === ACTION_STATES.MV)) {
+            if (selectedTank === this || actionState === ACTION_STATES.MV) {
                 let center = this
 
                 if (actionState === ACTION_STATES.MV && this === userTank) {
                     center = hoveredBox
                 }
 
-
                 if (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.MV || actionState === ACTION_STATES.ATK) {
-                    // Range
+
                     ctx.beginPath()
                     ctx.arc(center.x + this.width / 2, center.y + this.height / 2, this.player.range * this.width + this.width / 2, 0, 2 * Math.PI)
                     if (this.player === userPlayer) {
+
                         if (actionState === ACTION_STATES.ATK) {
                             if (attackGui.selectedTarget) {
                                 ctx.strokeStyle = c_atkMarkedTarget
@@ -359,6 +359,7 @@
 
                     ctx.setLineDash([ 15, 10 ])
                     ctx.stroke()
+
                 }
 
                 if (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.GV) {
@@ -399,673 +400,699 @@
 
     const guiDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
 
-    let moveGui, attackGui, giveGui, actionGuis;
 
-    if (userTank) {
-        class ActionPopup extends Driver.ActiveComponent {
-            constructor(text, xOffset, textAlign, state, color = '#fcda6d') {
-                super();
+    class ActionPopup extends Driver.ActiveComponent {
+        constructor(text, xOffset, textAlign, state, color = '#fcda6d') {
+            super();
 
-                this.userTank = userTank
-                this.show = false;
-                this.hover = false;
-                this.selected = false;
+            this.userTank = userTank
+            this.show = false;
+            this.hover = false;
+            this.selected = false;
 
-                this.yLevel = 75;
-                this.yOffset = 10;
-                this.xOffset = xOffset;
-                this.height = 20;
-                this.color = color
+            this.yLevel = 75;
+            this.yOffset = 10;
+            this.xOffset = xOffset;
+            this.height = 20;
+            this.color = color
 
-                this.text = text;
-                this.textAlign = textAlign;
-                this.state = state;
+            this.text = text;
+            this.textAlign = textAlign;
+            this.state = state;
 
-                this.font = `${ this.height }px Uni-Sans`;
+            this.font = `${ this.height }px Uni-Sans`;
 
-                this.bounds = null;
+            this.bounds = null;
+        }
+
+        update(driver) {
+            this.show = selectedTank.player.user_id === userPlayer.user_id && showPlayerOption && actionState === ACTION_STATES.SELECT;
+
+            if (!this.show) return;
+
+            const ctx = driver.canvas_ctx;
+
+            ctx.textAlign = this.textAlign
+            ctx.font = this.font
+
+            this.bounds = {
+                x: userTank.x + this.xOffset + userTank.width / 2 - ctx.measureText(this.text).actualBoundingBoxLeft - 10,
+                y: userTank.y + this.yLevel - this.yOffset,
+                width: ctx.measureText(this.text).width + 18,
+                height: this.height + this.yOffset * 2
             }
 
-            update(driver) {
-                this.show = selectedTank.player.user_id === userPlayer.user_id && showPlayerOption && actionState === ACTION_STATES.SELECT;
+            this.hover = inBounds(driver.mouse_events, this.bounds)
+            focused = this.hover || focused
 
-                if (!this.show) return;
-
-                const ctx = driver.canvas_ctx;
-
-                ctx.textAlign = this.textAlign
-                ctx.font = this.font
-
-                this.bounds = {
-                    x: userTank.x + this.xOffset + userTank.width / 2 - ctx.measureText(this.text).actualBoundingBoxLeft - 10,
-                    y: userTank.y + this.yLevel - this.yOffset,
-                    width: ctx.measureText(this.text).width + 18,
-                    height: this.height + this.yOffset * 2
-                }
-
-                this.hover = inBounds(driver.mouse_events, this.bounds)
-                focused = this.hover || focused
-
-                if (this.hover && driver.mouse_events.pressed) {
-                    actionState = this.state;
-                    driver.mouse_events.pressed = false;
-                    attackGui.init()
-                }
-            }
-
-            redraw(driver) {
-                if (!this.show) return;
-                const ctx = driver.canvas_ctx;
-
-                const x = userTank.x + this.xOffset + userTank.width / 2;
-                const y = userTank.y + this.yLevel;
-
-                ctx.textAlign = this.textAlign
-                ctx.textBaseline = 'hanging'
-                ctx.font = this.font
-
-                ctx.fillStyle = 'rgba(0,0,0,0.47)'
-                ctx.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)
-
-                if (this.hover) {
-                    ctx.strokeStyle = this.color
-                    ctx.strokeText(this.text, x, y)
-                }
-
-                ctx.fillStyle = 'white'
-                ctx.fillText(this.text, x, y)
+            if (this.hover && driver.mouse_events.pressed) {
+                actionState = this.state;
+                driver.mouse_events.pressed = false;
+                attackGui.init()
             }
         }
 
-        const xOffset = 50;
+        redraw(driver) {
+            if (!this.show) return;
+            const ctx = driver.canvas_ctx;
 
-        const moveButton = new ActionPopup("Move", -xOffset - 1, "right", ACTION_STATES.MV, c_moveLine)
-        const attackButton = new ActionPopup("Attack", 0, "center", ACTION_STATES.ATK, c_atkTarget)
-        const giveButton = new ActionPopup("Support", xOffset, "left", ACTION_STATES.GV, c_giveLine)
+            const x = userTank.x + this.xOffset + userTank.width / 2;
+            const y = userTank.y + this.yLevel;
 
-        guiDriver.components.push(moveButton)
-        guiDriver.components.push(attackButton)
-        guiDriver.components.push(giveButton)
+            ctx.textAlign = this.textAlign
+            ctx.textBaseline = 'hanging'
+            ctx.font = this.font
 
-        // Action guis
+            ctx.fillStyle = 'rgba(0,0,0,0.47)'
+            ctx.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height)
 
-        // Move gui
-        moveGui = new class extends Driver.ActiveComponent {
-            constructor() {
-                super();
-
-                this.confirming = false;
-                this.init()
+            if (this.hover) {
+                ctx.strokeStyle = this.color
+                ctx.strokeText(this.text, x, y)
             }
 
-            init() {
-                this.boxes = [ userTank.box ]; // Path from selected grid
-                this.hintBoxes = [ userTank.box ]; // Show path on hover
-
-                this.destinations = [] // Stop points of selected grid
-            }
-
-            confirmMove() {
-                if (this.confirming) return;
-                actionState = ACTION_STATES.SELECT
-
-                // Remove first position (which is the player's current position)
-                const positions = this.boxes.slice(1, this.boxes.length).map(box => box.coords)
-
-                userPlayer.position = positions[positions.length - 1]
-                userTank.move(positions[positions.length - 1])
-
-                this.init()
-                this.confirming = true;
-
-
-                fetch(`/action/${ game._id }/move`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ positions: positions })
-                })
-                    .then(() => {
-                        console.log("Success!")
-                        refetch()
-                        this.init()
-                        this.confirming = false;
-                    })
-            }
-
-            cancel() {
-                actionState = ACTION_STATES.SELECT
-                this.init()
-                actions = userPlayer.actions
-                updateStats()
-            }
-
-            getCurrentBox = () => this.boxes[this.boxes.length - 1]
-
-            update(driver) {
-                if (actionState !== ACTION_STATES.MV) return;
-
-                if (this.confirming) return;
-
-                if (driver.key_events["Escape"]) {
-                    this.cancel()
-                }
-
-                const MOVE = {
-                    CONFIRM: 0,
-                    REMOVE: 1,
-                    ADD: 2,
-                    RESET: 3,
-                    CANCEL: 4,
-                    COLLIDE: 5
-                }
-
-                let moveType;
-
-                // Existing spot
-                if (this.destinations.includes(hoveredBox)) {
-                    // Final spot
-                    if (this.destinations.indexOf(hoveredBox) === this.destinations.length - 1) {
-                        updateHint("Move", `[${ getChar(hoveredBox.coords.x) }${ hoveredBox.coords.y + 1 }] ` + "Press 'Enter' or click again to commit movement", c_moveLine)
-                        moveType = MOVE.CONFIRM
-                    } else {
-                        updateHint("Move", "Click to remove succeeding waypoints")
-                        moveType = MOVE.REMOVE
-                    }
-
-                    // Reset
-                } else if (hoveredBox === userTank.box) {
-                    if (this.boxes.length === 1) {
-                        updateHint("Move", "Press 'Escape' or click to cancel movement")
-                        moveType = MOVE.CANCEL
-                    } else {
-                        updateHint("Move", "Click to remove succeeding waypoints")
-                        moveType = MOVE.RESET
-                    }
-                    // New spot
-                } else {
-                    if (!game.players.find(player => coordsEquals(player.position, hoveredBox.coords))) {
-                        updateHint("Move", `[${ getChar(hoveredBox.coords.x) }${ hoveredBox.coords.y + 1 }] ` + "Click to add waypoint")
-                        moveType = MOVE.ADD;
-                    } else {
-                        updateHint("Move", "Can't move there!")
-                        moveType = MOVE.COLLIDE;
-                    }
-                }
-
-
-                if (driver.mouse_events.pressed || driver.key_pressed["Enter"]) {
-                    switch (moveType) {
-                        case MOVE.ADD:
-                            // Parallel position
-                            if (parallelCoords(this.getCurrentBox().coords, hoveredBox.coords)) {
-                                getPath(this.getCurrentBox().coords, hoveredBox.coords).forEach(c => this.boxes.push(grid[c.x][c.y]))
-                            } else {
-                                // Elbow position
-                                const elbowCoords = connectCoords(this.getCurrentBox().coords, hoveredBox.coords);
-
-                                getPath(this.getCurrentBox().coords, elbowCoords).forEach(c => this.boxes.push(grid[c.x][c.y]))
-                                getPath(elbowCoords, hoveredBox.coords).forEach(c => this.boxes.push(grid[c.x][c.y]))
-                            }
-
-                            // Overflow
-                            if (this.boxes.length > userPlayer.actions + 1) {
-                                this.boxes = this.boxes.slice(0, userPlayer.actions + 1)
-                                if (this.boxes.length > 1)
-                                    this.destinations.push(this.getCurrentBox())
-                            } else {
-                                this.destinations.push(hoveredBox)
-                            }
-                            break;
-                        case MOVE.RESET:
-                            this.init()
-                            break;
-                        case MOVE.CANCEL:
-                            this.cancel()
-                            break;
-                        case MOVE.CONFIRM:
-                            this.confirmMove();
-                            break;
-                        case MOVE.REMOVE:
-                            this.destinations = this.destinations.slice(0, this.destinations.indexOf(hoveredBox) + 1)
-                            this.boxes = this.boxes.slice(0, this.boxes.indexOf(this.destinations[this.destinations.length - 1]) + 1)
-                            if (this.destinations.length === 0) {
-                                this.boxes = [ userTank.box ];
-                            }
-                            break;
-                    }
-
-                }
-
-                this.hintBoxes = [];
-
-                const elbowCoords = connectCoords(this.getCurrentBox().coords, hoveredBox.coords);
-
-                getPath(this.getCurrentBox().coords, elbowCoords).forEach(c => this.hintBoxes.push(grid[c.x][c.y]))
-                getPath(elbowCoords, hoveredBox.coords).forEach(c => this.hintBoxes.push(grid[c.x][c.y]))
-            }
-
-            drawDest(ctx, box) {
-                ctx.strokeStyle = 'white'
-                ctx.strokeRect(box.x + GRID_SIZE / 4, box.y + GRID_SIZE / 4, box.width - GRID_SIZE / 2, box.height - GRID_SIZE / 2)
-            }
-
-            drawCancel(ctx, box) {
-                ctx.strokeStyle = 'white'
-                ctx.beginPath()
-                ctx.moveTo(box.x + GRID_SIZE / 4, box.y + GRID_SIZE / 4)
-                ctx.lineTo(box.x + GRID_SIZE / 4 + box.width - GRID_SIZE / 2, box.y + GRID_SIZE / 4 + box.height - GRID_SIZE / 2)
-                ctx.moveTo(box.x + GRID_SIZE / 4, box.y + GRID_SIZE / 4 + box.height - GRID_SIZE / 2)
-                ctx.lineTo(box.x + GRID_SIZE / 4 + box.width - GRID_SIZE / 2, box.y + GRID_SIZE / 4)
-
-                ctx.stroke()
-            }
-
-            drawConfirm(ctx, box) {
-                ctx.strokeStyle = c_moveLine
-                ctx.beginPath()
-                ctx.arc(center(box).x, center(box).y, GRID_SIZE / 4, 0, 2 * Math.PI)
-                ctx.closePath()
-                ctx.stroke()
-            }
-
-            redraw(driver) {
-                if (actionState !== ACTION_STATES.MV) return;
-
-                const ctx = driver.canvas_ctx;
-
-                ctx.strokeStyle = '#ffffff'
-
-                const path = [ ...this.boxes, ...this.hintBoxes ]
-
-                let onDest = false;
-
-                for (let i = 0; i < path.length; i++) {
-                    // Fill path boxes' color
-                    if (onDest || hoveredBox === userTank.box) {
-                        ctx.fillStyle = c_moveCancel
-                    } else if (game.players.find(player => coordsEquals(player.position, hoveredBox.coords))) {
-                        ctx.fillStyle = c_moveOutOfRange
-                    } else {
-                        ctx.fillStyle = i < userPlayer.actions + 1 ? c_moveBlock : c_moveOutOfRange
-                    }
-
-                    ctx.fillRect(path[i].x, path[i].y, path[i].width, path[i].height)
-
-                    if (this.destinations.includes(path[i])) {
-                        // Draw marks for destinations
-                        if (onDest || hoveredBox === userTank.box) {
-                            this.drawCancel(ctx, path[i])
-                        } else if (i === this.boxes.length - 1 && hoveredBox === this.destinations[this.destinations.length - 1]) {
-                            this.drawConfirm(ctx, path[i]);
-                        } else {
-                            this.drawDest(ctx, path[i]);
-                        }
-
-                        // If current box is the hovered box and it's not the final destination (in which we confirm instead of cancel)
-                        //  or its the first box
-                        if ((hoveredBox === path[i] && this.destinations.indexOf(path[i]) !== this.destinations.length - 1)
-                            || hoveredBox === userTank.box) {
-                            onDest = true;
-                        }
-                    }
-
-                    // Skip hover if cancelling
-                    if (onDest && i === this.boxes.length - 1) break;
-                }
-
-                const arrowHeadLength = 10
-
-                // Mark targets
-                game.players
-                    .filter(player => inRange(hoveredBox.coords, player.position, userPlayer.range + giveRangeIncrease) && player !== userPlayer)
-                    .map(player => tanks.find(t => coordsEquals(t.box.coords, player.position)))
-                    .forEach(tank => {
-                        if (tank.box === hoveredBox) return
-
-                        if (inRange(hoveredBox.coords, tank.box.coords, userPlayer.range)) {
-                            ctx.strokeStyle = c_atkRange
-                        } else {
-                            ctx.strokeStyle = c_giveRange
-                        }
-
-                        const angle = angleTo(hoveredBox, tank.box)
-                        const origin = vecToPoint(5, angle - Math.PI / 2)
-                        const arrowHead = vecToPoint(arrowHeadLength, angle - Math.PI / 2 - Math.PI / 4)
-
-                        ctx.beginPath()
-                        ctx.moveTo(center(hoveredBox).x + origin.x, center(hoveredBox).y + origin.y)
-                        ctx.lineTo(center(tank.box).x + origin.x, center(tank.box).y + origin.y)
-                        ctx.lineTo(center(tank.box).x + origin.x + arrowHead.x, center(tank.box).y + origin.y + arrowHead.y)
-                        ctx.stroke();
-                    })
-
-                // Enemy range warning
-                game.players
-                    .forEach(p => {
-                        if (p._id === userPlayer._id) return;
-                        const tank = tanks.find(t => coordsEquals(t.box.coords, p.position));
-                        if (tank.box === hoveredBox) return
-
-                        if (inRange(tank.box.coords, hoveredBox.coords, p.range)) {
-                            ctx.strokeStyle = c_atkRange
-                        } else if (inRange(tank.box.coords, hoveredBox.coords, p.range + giveRangeIncrease)) {
-                            ctx.strokeStyle = c_giveRange
-                        } else {
-                            return
-                        }
-
-                        const angle = angleTo(hoveredBox, tank.box)
-                        const origin = vecToPoint(2, angle + Math.PI / 2)
-                        const arrowHead = vecToPoint(arrowHeadLength, angle + Math.PI / 4)
-
-                        ctx.beginPath()
-                        ctx.moveTo(center(tank.box).x + origin.x, center(tank.box).y + origin.y)
-                        ctx.lineTo(center(hoveredBox).x + origin.x, center(hoveredBox).y + origin.y)
-                        ctx.lineTo(center(hoveredBox).x + origin.x + arrowHead.x, center(hoveredBox).y + origin.y + arrowHead.y)
-                        ctx.stroke();
-                    })
-
-                actions = userPlayer.actions - path.length + 1
-                updateStats()
-            }
+            ctx.fillStyle = 'white'
+            ctx.fillText(this.text, x, y)
         }
-
-        // Attack gui
-        attackGui = new class extends Driver.ActiveComponent {
-            constructor(props) {
-                super(props);
-                /**
-                 * @type {Tank[]}
-                 */
-                this.targets = [];
-                this.hoverOnSelectedTarget = false;
-                this.init();
-                this.confirming = false;
-            }
-
-            init() {
-                this.targets = game.players
-                    .filter(player => inRange(userTank.box.coords, player.position, userPlayer.range) && player !== userPlayer)
-                    .map(player => tanks.find(t => coordsEquals(t.box.coords, player.position)))
-
-                /**
-                 * @type {Tank}
-                 */
-                this.selectedTarget = null;
-            }
-
-            confirm() {
-                console.log("Attacking...")
-                fetch(`/action/${ game._id }/attack/${ this.selectedTarget.player._id }`, { method: 'POST' })
-                    .then(() => {
-                        console.log("Attack success")
-                        refetch()
-                        this.cancel()
-                        this.confirming = false;
-                    })
-            }
-
-            cancel() {
-                this.init();
-                actionState = ACTION_STATES.SELECT
-                updateStats()
-
-            }
-
-            update(driver) {
-                if (actionState !== ACTION_STATES.ATK || this.confirming) return;
-
-                updateStats()
-
-                actions = userPlayer.actions
-
-                if (driver.key_pressed["Escape"]) this.cancel()
-
-                const ATTACK = {
-                    NONE: -1,
-                    HOVER: 0,
-                    ATTACK: 1
-                }
-
-                let attackState = ATTACK.NONE
-
-                const hoverTarget = this.targets.find(t => hoveredBox === t.box)
-
-                this.hoverOnSelectedTarget = false;
-                if (!this.selectedTarget) {
-                    if (hoverTarget) {
-                        updateHint("Attack", "Click to mark target")
-                        attackState = ATTACK.HOVER
-                    } else {
-                        updateHint("Attack", "Click on a tank to mark as target")
-                    }
-                } else {
-                    if (this.selectedTarget === hoverTarget) {
-                        updateHint("Attack", "Click to commence attack on target", c_atkMarkedTarget)
-                        this.hoverOnSelectedTarget = true;
-                        actions = userPlayer.actions - 1
-                        updateStats()
-                        attackState = ATTACK.ATTACK
-                    } else {
-                        updateHint("Attack", "Click to remove mark")
-                        attackState = ATTACK.NONE
-                    }
-                }
-
-
-                if (driver.mouse_events.pressed) {
-                    switch (attackState) {
-                        case ATTACK.NONE:
-                            this.selectedTarget = null
-                            break;
-                        case ATTACK.HOVER:
-                            this.selectedTarget = hoverTarget;
-                            break;
-                        case ATTACK.ATTACK:
-                            this.confirm();
-                            this.confirming = true;
-                            break;
-                        default:
-                    }
-                }
-            }
-
-            markTargets(ctx, box, color = c_atkTarget) {
-                ctx.strokeStyle = color;
-                ctx.shadowColor = 'white'
-                ctx.shadowBlur = 3
-
-                const innerRadius = 5;
-                const outerRadius = 17;
-                const lineLength = 5;
-
-                ctx.beginPath()
-                ctx.arc(center(box).x, center(box).y, innerRadius, 0, 2 * Math.PI)
-                ctx.closePath();
-                ctx.stroke()
-
-                ctx.beginPath()
-                ctx.arc(center(box).x, center(box).y, outerRadius, -Math.PI / 4, Math.PI / 4)
-                ctx.stroke()
-
-                ctx.beginPath()
-                ctx.arc(center(box).x, center(box).y, outerRadius, Math.PI * 3 / 4, -Math.PI * 3 / 4)
-                ctx.stroke()
-
-                ctx.moveTo(center(box).x, center(box).y + outerRadius)
-                ctx.lineTo(center(box).x, center(box).y + outerRadius + lineLength)
-                ctx.moveTo(center(box).x, center(box).y - outerRadius)
-                ctx.lineTo(center(box).x, center(box).y - outerRadius - lineLength)
-
-                ctx.moveTo(center(box).x + outerRadius, center(box).y)
-                ctx.lineTo(center(box).x + outerRadius + lineLength, center(box).y)
-                ctx.moveTo(center(box).x - outerRadius, center(box).y)
-                ctx.lineTo(center(box).x - outerRadius - lineLength, center(box).y)
-                ctx.stroke()
-
-                ctx.shadowBlur = 0
-            }
-
-            redraw(driver) {
-                if (actionState !== ACTION_STATES.ATK) return;
-                const ctx = driver.canvas_ctx;
-
-                this.targets.forEach(t => {
-                    if (this.selectedTarget && t === this.selectedTarget) {
-                        this.markTargets(ctx, t.box, c_atkMarkedTarget)
-                    } else {
-                        this.markTargets(ctx, t.box)
-                    }
-
-                })
-
-
-            }
-        }
-
-        // Give gui
-        giveGui = new class extends Driver.ActiveComponent {
-            constructor(props) {
-                super(props);
-                /**
-                 * @type {Tank[]}
-                 */
-                this.targets = [];
-                this.hoverOnSelectedTarget = false;
-                this.init();
-                this.confirming = false;
-            }
-
-            init() {
-                this.targets = game.players
-                    .filter(player => inRange(userTank.box.coords, player.position, userPlayer.range) && player !== userPlayer)
-                    .map(player => tanks.find(t => coordsEquals(t.box.coords, player.position)))
-
-                /**
-                 * @type {Tank}
-                 */
-                this.selectedTarget = null;
-            }
-
-            confirm() {
-                console.log("Attacking...")
-                fetch(`/action/${ game._id }/give/${ this.selectedTarget.player._id }/actions/1`, { method: 'POST' })
-                    .then(() => {
-                        console.log("Attack success")
-                        refetch()
-                        this.cancel()
-                        this.confirming = false;
-                    })
-            }
-
-            cancel() {
-                this.init();
-                actionState = ACTION_STATES.SELECT
-                updateStats()
-            }
-
-            update(driver) {
-                if (actionState !== ACTION_STATES.GV || this.confirming) return;
-
-                updateStats()
-
-                actions = userPlayer.actions
-
-                if (driver.key_pressed["Escape"]) this.cancel()
-
-                const SUPPORT = {
-                    NONE: -1,
-                    HOVER: 0,
-                    ATTACK: 1
-                }
-
-                let supportState = SUPPORT.NONE
-
-                const hoverTarget = this.targets.find(t => hoveredBox === t.box)
-
-                this.hoverOnSelectedTarget = false;
-                if (!this.selectedTarget) {
-                    if (hoverTarget) {
-                        updateHint("Support", "Click to select recipient")
-                        supportState = SUPPORT.HOVER
-                    } else {
-                        updateHint("Support", "Click on a tank to set as recipient")
-                    }
-                } else {
-                    if (this.selectedTarget === hoverTarget) {
-                        updateHint("Support", "Click to send energy points", c_giveLine)
-                        this.hoverOnSelectedTarget = true;
-                        actions = userPlayer.actions - 1
-                        updateStats()
-                        supportState = SUPPORT.ATTACK
-                    } else {
-                        updateHint("Support", "Click to deselect recipient")
-                        supportState = SUPPORT.NONE
-                    }
-                }
-
-
-                if (driver.mouse_events.pressed) {
-                    switch (supportState) {
-                        case SUPPORT.NONE:
-                            this.selectedTarget = null
-                            break;
-                        case SUPPORT.HOVER:
-                            this.selectedTarget = hoverTarget;
-                            break;
-                        case SUPPORT.ATTACK:
-                            this.confirm();
-                            this.confirming = true;
-                            break;
-                        default:
-                    }
-                }
-            }
-
-            markTargets(ctx, box, color = 'white') {
-                ctx.strokeStyle = color;
-                ctx.shadowColor = 'white'
-                ctx.shadowBlur = 3
-
-                const innerRadius = 5;
-                const outerRadius = 17;
-
-                ctx.beginPath()
-                ctx.arc(center(box).x, center(box).y, innerRadius, 0, 2 * Math.PI)
-                ctx.closePath();
-                ctx.stroke()
-
-                ctx.beginPath()
-                ctx.arc(center(box).x, center(box).y, outerRadius, 0, 2 * Math.PI)
-                ctx.stroke()
-
-
-                ctx.shadowBlur = 0
-            }
-
-            redraw(driver) {
-                if (actionState !== ACTION_STATES.GV) return;
-                const ctx = driver.canvas_ctx;
-
-                this.targets.forEach(t => {
-                    if (this.selectedTarget && t === this.selectedTarget) {
-                        this.markTargets(ctx, t.box, c_giveLine)
-                    } else {
-                        this.markTargets(ctx, t.box)
-                    }
-
-                })
-
-
-            }
-        }
-
-        actionGuis = [ moveGui, attackGui, giveGui ]
-
-       guiDriver.components.push(...actionGuis)
     }
+
+    const xOffset = 50;
+
+    const moveButton = new ActionPopup("Move", -xOffset - 1, "right", ACTION_STATES.MV, c_moveLine)
+    const attackButton = new ActionPopup("Attack", 0, "center", ACTION_STATES.ATK, c_atkTarget)
+    const giveButton = new ActionPopup("Support", xOffset, "left", ACTION_STATES.GV, c_giveLine)
+
+    const actionPopups = [ moveButton, attackButton, giveButton ]
+
+    guiDriver.components.push(...actionPopups)
+
+    // Action guis
+
+    // Move gui
+    const moveGui = new class extends Driver.ActiveComponent {
+        constructor() {
+            super();
+
+            this.confirming = false;
+
+            if (userTank)
+                this.init()
+        }
+
+        init() {
+            this.boxes = [ userTank.box ]; // Path from selected grid
+            this.hintBoxes = [ userTank.box ]; // Show path on hover
+
+            this.destinations = [] // Stop points of selected grid
+        }
+
+        confirmMove() {
+            if (this.confirming) return;
+            actionState = ACTION_STATES.SELECT
+
+            // Remove first position (which is the player's current position)
+            const positions = this.boxes.slice(1, this.boxes.length).map(box => box.coords)
+
+            userPlayer.position = positions[positions.length - 1]
+            userTank.move(positions[positions.length - 1])
+
+            this.init()
+            this.confirming = true;
+
+
+            fetch(`/action/${ game._id }/move`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ positions: positions })
+            })
+                .then(() => {
+                    console.log("Success!")
+                    refetch()
+                    this.init()
+                    this.confirming = false;
+                })
+        }
+
+        cancel() {
+            actionState = ACTION_STATES.SELECT
+            this.init()
+            actions = userPlayer.actions
+            updateInfo()
+        }
+
+        getCurrentBox = () => this.boxes[this.boxes.length - 1]
+
+        update(driver) {
+            if (actionState !== ACTION_STATES.MV) return;
+
+            if (this.confirming) return;
+
+            if (driver.key_events["Escape"]) {
+                this.cancel()
+            }
+
+            const MOVE = {
+                CONFIRM: 0,
+                REMOVE: 1,
+                ADD: 2,
+                RESET: 3,
+                CANCEL: 4,
+                COLLIDE: 5
+            }
+
+            let moveType;
+
+            // Existing spot
+            if (this.destinations.includes(hoveredBox)) {
+                // Final spot
+                if (this.destinations.indexOf(hoveredBox) === this.destinations.length - 1) {
+                    updateHint("Move", `[${ getChar(hoveredBox.coords.x) }${ hoveredBox.coords.y + 1 }] ` + "Press 'Enter' or click again to commit movement", "Press escape to cancel" , c_moveLine)
+                    moveType = MOVE.CONFIRM
+                } else {
+                    updateHint("Move", "Click to remove succeeding waypoints", "Press escape to cancel")
+                    moveType = MOVE.REMOVE
+                }
+
+                // Reset
+            } else if (hoveredBox === userTank.box) {
+                if (this.boxes.length === 1) {
+                    updateHint("Move", "Press 'Escape' or click to cancel movement")
+                    moveType = MOVE.CANCEL
+                } else {
+                    updateHint("Move", "Click to remove succeeding waypoints", "Press escape to cancel")
+                    moveType = MOVE.RESET
+                }
+                // New spot
+            } else {
+                if (!game.players.find(player => coordsEquals(player.position, hoveredBox.coords))) {
+                    updateHint("Move", `[${ getChar(hoveredBox.coords.x) }${ hoveredBox.coords.y + 1 }] ` + "Click to add waypoint", "Press escape to cancel")
+                    moveType = MOVE.ADD;
+                } else {
+                    updateHint("Move", "Can't move there!")
+                    moveType = MOVE.COLLIDE;
+                }
+            }
+
+
+            if (driver.mouse_events.pressed || driver.key_pressed["Enter"]) {
+                switch (moveType) {
+                    case MOVE.ADD:
+                        // Parallel position
+                        if (parallelCoords(this.getCurrentBox().coords, hoveredBox.coords)) {
+                            getPath(this.getCurrentBox().coords, hoveredBox.coords).forEach(c => this.boxes.push(grid[c.x][c.y]))
+                        } else {
+                            // Elbow position
+                            const elbowCoords = connectCoords(this.getCurrentBox().coords, hoveredBox.coords);
+
+                            getPath(this.getCurrentBox().coords, elbowCoords).forEach(c => this.boxes.push(grid[c.x][c.y]))
+                            getPath(elbowCoords, hoveredBox.coords).forEach(c => this.boxes.push(grid[c.x][c.y]))
+                        }
+
+                        // Overflow
+                        if (this.boxes.length > userPlayer.actions + 1) {
+                            this.boxes = this.boxes.slice(0, userPlayer.actions + 1)
+                            if (this.boxes.length > 1)
+                                this.destinations.push(this.getCurrentBox())
+                        } else {
+                            this.destinations.push(hoveredBox)
+                        }
+                        break;
+                    case MOVE.RESET:
+                        this.init()
+                        break;
+                    case MOVE.CANCEL:
+                        this.cancel()
+                        break;
+                    case MOVE.CONFIRM:
+                        this.confirmMove();
+                        break;
+                    case MOVE.REMOVE:
+                        this.destinations = this.destinations.slice(0, this.destinations.indexOf(hoveredBox) + 1)
+                        this.boxes = this.boxes.slice(0, this.boxes.indexOf(this.destinations[this.destinations.length - 1]) + 1)
+                        if (this.destinations.length === 0) {
+                            this.boxes = [ userTank.box ];
+                        }
+                        break;
+                }
+
+            }
+
+            this.hintBoxes = [];
+
+            const elbowCoords = connectCoords(this.getCurrentBox().coords, hoveredBox.coords);
+
+            getPath(this.getCurrentBox().coords, elbowCoords).forEach(c => this.hintBoxes.push(grid[c.x][c.y]))
+            getPath(elbowCoords, hoveredBox.coords).forEach(c => this.hintBoxes.push(grid[c.x][c.y]))
+        }
+
+        drawDest(ctx, box) {
+            ctx.strokeStyle = 'white'
+            ctx.strokeRect(box.x + GRID_SIZE / 4, box.y + GRID_SIZE / 4, box.width - GRID_SIZE / 2, box.height - GRID_SIZE / 2)
+        }
+
+        drawCancel(ctx, box) {
+            ctx.strokeStyle = 'white'
+            ctx.beginPath()
+            ctx.moveTo(box.x + GRID_SIZE / 4, box.y + GRID_SIZE / 4)
+            ctx.lineTo(box.x + GRID_SIZE / 4 + box.width - GRID_SIZE / 2, box.y + GRID_SIZE / 4 + box.height - GRID_SIZE / 2)
+            ctx.moveTo(box.x + GRID_SIZE / 4, box.y + GRID_SIZE / 4 + box.height - GRID_SIZE / 2)
+            ctx.lineTo(box.x + GRID_SIZE / 4 + box.width - GRID_SIZE / 2, box.y + GRID_SIZE / 4)
+
+            ctx.stroke()
+        }
+
+        drawConfirm(ctx, box) {
+            ctx.strokeStyle = c_moveLine
+            ctx.beginPath()
+            ctx.arc(center(box).x, center(box).y, GRID_SIZE / 4, 0, 2 * Math.PI)
+            ctx.closePath()
+            ctx.stroke()
+        }
+
+        redraw(driver) {
+            if (actionState !== ACTION_STATES.MV) return;
+
+            const ctx = driver.canvas_ctx;
+
+            ctx.strokeStyle = '#ffffff'
+
+            const path = [ ...this.boxes, ...this.hintBoxes ]
+
+            let onDest = false;
+
+            for (let i = 0; i < path.length; i++) {
+                // Fill path boxes' color
+                if (onDest || hoveredBox === userTank.box) {
+                    ctx.fillStyle = c_moveCancel
+                } else if (game.players.find(player => coordsEquals(player.position, hoveredBox.coords))) {
+                    ctx.fillStyle = c_moveOutOfRange
+                } else {
+                    ctx.fillStyle = i < userPlayer.actions + 1 ? c_moveBlock : c_moveOutOfRange
+                }
+
+                ctx.fillRect(path[i].x, path[i].y, path[i].width, path[i].height)
+
+                if (this.destinations.includes(path[i])) {
+                    // Draw marks for destinations
+                    if (onDest || hoveredBox === userTank.box) {
+                        this.drawCancel(ctx, path[i])
+                    } else if (i === this.boxes.length - 1 && hoveredBox === this.destinations[this.destinations.length - 1]) {
+                        this.drawConfirm(ctx, path[i]);
+                    } else {
+                        this.drawDest(ctx, path[i]);
+                    }
+
+                    // If current box is the hovered box and it's not the final destination (in which we confirm instead of cancel)
+                    //  or its the first box
+                    if ((hoveredBox === path[i] && this.destinations.indexOf(path[i]) !== this.destinations.length - 1)
+                        || hoveredBox === userTank.box) {
+                        onDest = true;
+                    }
+                }
+
+                // Skip hover if cancelling
+                if (onDest && i === this.boxes.length - 1) break;
+            }
+
+            const arrowHeadLength = 10
+
+            // Mark targets
+            game.players
+                .filter(player => inRange(hoveredBox.coords, player.position, userPlayer.range + giveRangeIncrease) && player !== userPlayer)
+                .map(player => tanks.find(t => coordsEquals(t.box.coords, player.position)))
+                .forEach(tank => {
+                    if (tank.box === hoveredBox) return
+
+                    if (inRange(hoveredBox.coords, tank.box.coords, userPlayer.range)) {
+                        ctx.strokeStyle = c_atkRange
+                    } else {
+                        ctx.strokeStyle = c_giveRange
+                    }
+
+                    const angle = angleTo(hoveredBox, tank.box)
+                    const origin = vecToPoint(5, angle - Math.PI / 2)
+                    const arrowHead = vecToPoint(arrowHeadLength, angle - Math.PI / 2 - Math.PI / 4)
+
+                    ctx.beginPath()
+                    ctx.moveTo(center(hoveredBox).x + origin.x, center(hoveredBox).y + origin.y)
+                    ctx.lineTo(center(tank.box).x + origin.x, center(tank.box).y + origin.y)
+                    ctx.lineTo(center(tank.box).x + origin.x + arrowHead.x, center(tank.box).y + origin.y + arrowHead.y)
+                    ctx.stroke();
+                })
+
+            // Enemy range warning
+            game.players
+                .forEach(p => {
+                    if (p._id === userPlayer._id) return;
+                    const tank = tanks.find(t => coordsEquals(t.box.coords, p.position));
+                    if (tank.box === hoveredBox) return
+
+                    if (inRange(tank.box.coords, hoveredBox.coords, p.range)) {
+                        ctx.strokeStyle = c_atkRange
+                    } else if (inRange(tank.box.coords, hoveredBox.coords, p.range + giveRangeIncrease)) {
+                        ctx.strokeStyle = c_giveRange
+                    } else {
+                        return
+                    }
+
+                    const angle = angleTo(hoveredBox, tank.box)
+                    const origin = vecToPoint(2, angle + Math.PI / 2)
+                    const arrowHead = vecToPoint(arrowHeadLength, angle + Math.PI / 4)
+
+                    ctx.beginPath()
+                    ctx.moveTo(center(tank.box).x + origin.x, center(tank.box).y + origin.y)
+                    ctx.lineTo(center(hoveredBox).x + origin.x, center(hoveredBox).y + origin.y)
+                    ctx.lineTo(center(hoveredBox).x + origin.x + arrowHead.x, center(hoveredBox).y + origin.y + arrowHead.y)
+                    ctx.stroke();
+                })
+
+            actions = userPlayer.actions - path.length + 1
+            updateInfo()
+        }
+    }
+
+
+    // Attack gui
+    const attackGui = new class extends Driver.ActiveComponent {
+        constructor(props) {
+            super(props);
+            /**
+             * @type {Tank[]}
+             */
+            this.targets = [];
+            this.hoverOnSelectedTarget = false;
+            this.confirming = false;
+
+            if (userTank)
+                this.init();
+        }
+
+        init() {
+            this.targets = game.players
+                .filter(player => inRange(userTank.box.coords, player.position, userPlayer.range) && player !== userPlayer)
+                .map(player => tanks.find(t => coordsEquals(t.box.coords, player.position)))
+
+            /**
+             * @type {Tank}
+             */
+            this.selectedTarget = null;
+        }
+
+        confirm() {
+            console.log("Attacking...")
+            selectedTank === userTank
+            fetch(`/action/${ game._id }/attack/${ this.selectedTarget.player._id }`, { method: 'POST' })
+                .then(() => {
+                    console.log("Attack success")
+                })
+                .finally(() => {
+                    refetch()
+                    this.cancel()
+                })
+        }
+
+        cancel() {
+            this.init();
+            actionState = ACTION_STATES.SELECT
+            updateInfo()
+            this.confirming = false;
+            document.body.className = ''
+        }
+
+        update(driver) {
+            if (actionState !== ACTION_STATES.ATK) return;
+
+            updateInfo()
+
+            actions = userPlayer.actions
+
+            if (driver.key_pressed["Escape"]) this.cancel()
+
+            const ATTACK = {
+                NONE: -1,
+                HOVER: 0,
+                ATTACK: 1
+            }
+
+            let attackState = ATTACK.NONE
+
+            const hoverTarget = this.targets.find(t => hoveredBox === t.box)
+
+            this.hoverOnSelectedTarget = false;
+            if (!this.selectedTarget) {
+                if (hoverTarget) {
+                    updateHint("Attack", "Click to mark target")
+                    attackState = ATTACK.HOVER
+                } else {
+                    updateHint("Attack", "Click on a tank to mark as target", "Press escape to cancel")
+                }
+            } else {
+                if (this.selectedTarget === hoverTarget) {
+                    updateHint("Attack", "Click to commence attack on " + this.selectedTarget.player.name, "Press escape to cancel" , c_atkMarkedTarget)
+                    this.hoverOnSelectedTarget = true;
+                    actions = userPlayer.actions - 1
+                    updateInfo()
+                    attackState = ATTACK.ATTACK
+                } else {
+                    updateHint("Attack", "Click to remove mark")
+                    attackState = ATTACK.NONE
+                }
+            }
+
+
+            if (driver.mouse_events.pressed) {
+                switch (attackState) {
+                    case ATTACK.NONE:
+                        this.selectedTarget = null
+                        break;
+                    case ATTACK.HOVER:
+                        this.selectedTarget = hoverTarget;
+                        break;
+                    case ATTACK.ATTACK:
+                        this.confirm();
+                        this.confirming = true;
+                        document.body.className = 'waiting'
+                        break;
+                    default:
+                }
+            }
+        }
+
+        markTargets(ctx, box, color = c_atkTarget) {
+            if (this.confirming) {
+                ctx.fillStyle = c_atkConfirming
+                ctx.fillRect(box.x, box.y, box.width, box.height)
+                return;
+            }
+
+            ctx.strokeStyle = color;
+            ctx.shadowColor = 'white'
+            ctx.shadowBlur = 3
+
+            const innerRadius = 5;
+            const outerRadius = 17;
+            const lineLength = 5;
+
+            ctx.beginPath()
+            ctx.arc(center(box).x, center(box).y, innerRadius, 0, 2 * Math.PI)
+            ctx.closePath();
+            ctx.stroke()
+
+            ctx.beginPath()
+            ctx.arc(center(box).x, center(box).y, outerRadius, -Math.PI / 4, Math.PI / 4)
+            ctx.stroke()
+
+            ctx.beginPath()
+            ctx.arc(center(box).x, center(box).y, outerRadius, Math.PI * 3 / 4, -Math.PI * 3 / 4)
+            ctx.stroke()
+
+            ctx.moveTo(center(box).x, center(box).y + outerRadius)
+            ctx.lineTo(center(box).x, center(box).y + outerRadius + lineLength)
+            ctx.moveTo(center(box).x, center(box).y - outerRadius)
+            ctx.lineTo(center(box).x, center(box).y - outerRadius - lineLength)
+
+            ctx.moveTo(center(box).x + outerRadius, center(box).y)
+            ctx.lineTo(center(box).x + outerRadius + lineLength, center(box).y)
+            ctx.moveTo(center(box).x - outerRadius, center(box).y)
+            ctx.lineTo(center(box).x - outerRadius - lineLength, center(box).y)
+            ctx.stroke()
+
+            ctx.shadowBlur = 0
+        }
+
+        redraw(driver) {
+            if (actionState !== ACTION_STATES.ATK) return;
+            const ctx = driver.canvas_ctx;
+
+            this.targets.forEach(t => {
+                if (this.selectedTarget && t === this.selectedTarget) {
+                    this.markTargets(ctx, t.box, c_atkMarkedTarget)
+                } else {
+                    this.markTargets(ctx, t.box)
+                }
+
+            })
+
+
+        }
+    }
+
+    // Give gui
+    giveGui = new class extends Driver.ActiveComponent {
+        constructor(props) {
+            super(props);
+            /**
+             * @type {Tank[]}
+             */
+            this.targets = [];
+            this.hoverOnSelectedTarget = false;
+            this.confirming = false;
+
+            if (userTank)
+                this.init();
+        }
+
+        init() {
+            this.targets = game.players
+                .filter(player => inRange(userTank.box.coords, player.position, userPlayer.range + giveRangeIncrease) && player !== userPlayer)
+                .map(player => tanks.find(t => coordsEquals(t.box.coords, player.position)))
+
+            /**
+             * @type {Tank}
+             */
+            this.selectedTarget = null;
+        }
+
+        confirm() {
+            console.log("Giving...")
+            selectedTank === userTank
+
+            fetch(`/action/${ game._id }/give/${ this.selectedTarget.player._id }/actions/1`, { method: 'POST' })
+                .then(() => {
+                    console.log("Giving success")
+                    refetch()
+                    this.cancel()
+                })
+        }
+
+        cancel() {
+            this.init();
+            actionState = ACTION_STATES.SELECT
+            updateInfo()
+            this.confirming = false;
+            document.body.className = ''
+        }
+
+        update(driver) {
+            if (actionState !== ACTION_STATES.GV || this.confirming) return;
+
+            updateInfo()
+
+            actions = userPlayer.actions
+
+            if (driver.key_pressed["Escape"]) this.cancel()
+
+            const SUPPORT = {
+                NONE: -1,
+                HOVER: 0,
+                ATTACK: 1
+            }
+
+            let supportState = SUPPORT.NONE
+
+            const hoverTarget = this.targets.find(t => hoveredBox === t.box)
+
+            this.hoverOnSelectedTarget = false;
+            if (!this.selectedTarget) {
+                if (hoverTarget) {
+                    updateHint("Support", "Click to select recipient")
+                    supportState = SUPPORT.HOVER
+                } else {
+                    updateHint("Support", "Click on a tank to set as recipient", "Press escape to cancel")
+                }
+            } else {
+                if (this.selectedTarget === hoverTarget) {
+                    updateHint("Support", "Click to send energy points", "Press escape to cancel", c_giveLine)
+                    this.hoverOnSelectedTarget = true;
+                    actions = userPlayer.actions - 1
+                    updateInfo()
+                    supportState = SUPPORT.ATTACK
+                } else {
+                    updateHint("Support", "Click to deselect recipient")
+                    supportState = SUPPORT.NONE
+                }
+            }
+
+
+            if (driver.mouse_events.pressed) {
+                switch (supportState) {
+                    case SUPPORT.NONE:
+                        this.selectedTarget = null
+                        break;
+                    case SUPPORT.HOVER:
+                        this.selectedTarget = hoverTarget;
+                        break;
+                    case SUPPORT.ATTACK:
+                        this.confirm();
+                        this.confirming = true;
+                        document.body.className = 'waiting'
+                        break;
+                    default:
+                }
+            }
+        }
+
+        markTargets(ctx, box, color = 'white') {
+            if (this.confirming) {
+                ctx.fillStyle = c_giveConfirming
+                ctx.fillRect(box.x, box.y, box.width, box.height)
+                return;
+            }
+            ctx.strokeStyle = color;
+            ctx.shadowColor = 'white'
+            ctx.shadowBlur = 3
+
+            const innerRadius = 5;
+            const outerRadius = 17;
+
+            ctx.beginPath()
+            ctx.arc(center(box).x, center(box).y, innerRadius, 0, 2 * Math.PI)
+            ctx.closePath();
+            ctx.stroke()
+
+            ctx.beginPath()
+            ctx.arc(center(box).x, center(box).y, outerRadius, 0, 2 * Math.PI)
+            ctx.stroke()
+
+
+            ctx.shadowBlur = 0
+        }
+
+        redraw(driver) {
+            if (actionState !== ACTION_STATES.GV) return;
+            const ctx = driver.canvas_ctx;
+
+            this.targets.forEach(t => {
+                if (this.selectedTarget && t === this.selectedTarget) {
+                    this.markTargets(ctx, t.box, c_giveLine)
+                } else {
+                    this.markTargets(ctx, t.box)
+                }
+
+            })
+
+
+        }
+    }
+
+
+    actionGuis = [ moveGui, attackGui, giveGui ]
+
+    if (userTank)
+        guiDriver.components.push(...actionGuis)
+
 
     // Selection
     guiDriver.components.push(new class extends Driver.ActiveComponent {
@@ -1143,7 +1170,18 @@
                     break;
                 default:
                     ctx.strokeStyle = 'white'
-                    if (selectedTank === userTank) enableUpgrades()
+                    if (selectedTank === userTank) {
+                        if (hoveredBox === userTank.box) {
+                            if (userPlayer.actions > 0) {
+                                updateHint("Control", "Click to toggle controls")
+                            } else {
+                                updateHint("Control", "Out of energy!", '.', 'red')
+                                showPlayerOption = false;
+                            }
+                        }
+
+                        enableUpgrades()
+                    }
             }
 
             ctx.stroke()
@@ -1154,9 +1192,9 @@
     objectDriver.run(16);
     guiDriver.run(16)
 
-    updateStats()
+    updateInfo()
 
-    function updateStats() {
+    function updateInfo() {
         // Info panel
         const player = selectedTank.player;
         const isUser = userTank === selectedTank
@@ -1164,11 +1202,17 @@
         document.querySelector('#name').innerHTML = player.name
         document.querySelector('#id').innerHTML = ` &lt${ getChar(player.position.x) }${ player.position.y + 1 }&gt ${ player._id }`
         document.querySelector('#actions').innerHTML = "Energy: " + player.actions + (isUser && actions !== player.actions ? ` → ${ actions }` : '')
+        if (player.actions === 0) {
+            document.querySelector('#actions').style.color = 'red'
+        } else {
+            document.querySelector('#actions').style.color = 'white'
+        }
+
         document.querySelector('#health').innerHTML = "Health: " + player.health
         document.querySelector('#range').innerHTML = "Range: " + player.range
     }
 
-    function updateHint(title, text, color = 'white') {
+    function updateHint(title, text, minorHint = ".", color = 'white') {
         if (!title) {
             document.querySelector('#hintPanel').style.display = 'none';
         }
@@ -1176,6 +1220,13 @@
         document.querySelector('#hintPanel').style.display = 'block';
         document.querySelector('#hintPanel h3').innerHTML = title;
         document.querySelector('#hintPanel p').innerHTML = text;
+
+        document.querySelector('#hintPanel #minorHint').innerHTML = minorHint
+        if (minorHint === ".") {
+            document.querySelector('#hintPanel #minorHint').classList.add("hidden")
+        } else {
+            document.querySelector('#hintPanel #minorHint').classList.remove("hidden")
+        }
 
         document.querySelector('#hintPanel h3').style.color = color;
     }
@@ -1214,7 +1265,7 @@
             }
 
             node.querySelector(".actionsToAdd").innerHTML = actionsToAdd[upgradeName] > 0 ? `+${ actionsToAdd[upgradeName] }` : ''
-            updateStats()
+            updateInfo()
         }
 
         node.querySelector("a.minus").onclick = () => {
@@ -1230,7 +1281,7 @@
             }
 
             node.querySelector(".actionsToAdd").innerHTML = actionsToAdd[upgradeName] > 0 ? `+${ actionsToAdd[upgradeName] }` : ''
-            updateStats()
+            updateInfo()
         }
     })
 
@@ -1242,7 +1293,7 @@
         })
 
         document.querySelectorAll('.actionsToAdd').forEach(n => n.innerHTML = '')
-        updateStats()
+        updateInfo()
     }
 
     document.querySelector("#infoPanel .confirm").onclick = () => {
@@ -1255,13 +1306,13 @@
         )
 
         Promise.all(fetchPromises).then(() => {
-            updateStats()
+            updateInfo()
             enableUpgrades()
             refetch()
         })
 
         document.querySelectorAll('.actionsToAdd').forEach(n => n.innerHTML = '')
-        updateStats()
+        updateInfo()
     }
 </script>
 
@@ -1273,6 +1324,11 @@
         background-color: black;
         max-height: fit-content;
         padding-bottom: 40px;
+    }
+
+    #statsPanel {
+        position: absolute;
+        margin: 10px;
     }
 
     .panel {
@@ -1316,7 +1372,20 @@
     }
 
     #hintPanel p {
-        margin-top: 5px;
+        margin-top: 7px;
+        margin-bottom: 0;
+        font-size: 16px;
+    }
+
+    #hintPanel #minorHint {
+        margin-top: 0;
+        margin-bottom: 0;
+        color: gray;
+        font-size: 12px;
+    }
+
+    #hintPanel #minorHint.hidden {
+        color: black;
     }
 
     #winScreen {

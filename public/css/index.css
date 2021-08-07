@@ -60,6 +60,9 @@ body {
     color: var(--secondary);
 }
 
+body.waiting * {
+    cursor: wait;
+}
 
 h1 {
     color: white;
