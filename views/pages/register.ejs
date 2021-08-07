@@ -1,26 +1,29 @@
 <%- include('../partials/head.html') %>
 
-<h1>Register</h1>
-<div>
-    <form action="/auth/register" method="post">
-        <div>
-            <p class="error"></p>
-            <script>
-                const urlParams = new URLSearchParams(window.location.search);
-                const error = urlParams.get('error')
-                if (error) document.querySelector("p.error").innerHTML = "User with that e-mail already exists!"
-            </script>
+<div class="section">
+    <div class="area">
+        <h1>Register</h1>
 
-            <label for="email">E-mail: </label>
-            <input type="email" id="email" name="email" required/>
+        <form action="/auth/register" method="post">
+            <div>
+                <p class="error"></p>
+                <script>
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const error = urlParams.get('error')
+                    if (error) document.querySelector("p.error").innerHTML = "User with that e-mail already exists!"
+                </script>
 
-            <br/>
+                <label for="email">E-mail: </label>
+                <input type="email" id="email" name="email" required/>
 
-            <label for="password">Password: </label>
-            <input type="password" id="password" name="password" required/>
-        </div>
-        <button type="submit">Register</button>
-    </form>
+                <br/>
+
+                <label for="password">Password: </label>
+                <input type="password" id="password" name="password" required/>
+            </div>
+            <button type="submit">Register</button>
+        </form>
+    </div>
 </div>
 
 <%- include('../partials/footer.html') %>
