@@ -40,9 +40,7 @@ function generateGamesTable(tableQuery, gameObjects) {
 
         if (!game.hasStarted) {
             message = 'Lobby'
-        }
-
-        if (game.players.filter(p => p.health > 0).length <= 1) {
+        } else if (game.players.filter(p => p.health > 0).length <= 1) {
             message = 'Finished'
         }
 
