@@ -5,6 +5,7 @@
     --secondary-glow: #eeeae9;
 
     --contrast: #f8c33d;
+    --contrast-blue: #60d5ff;
 
     --card-background: rgba(5, 5, 5, 0.73);
 
@@ -163,7 +164,7 @@ input {
     color: var(--input-text);
 
     width: 200px;
-    font-size: 13px;
+    font-size: 16px;
     margin: 5px;
     border: 0;
     outline: 0;

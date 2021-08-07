@@ -1,5 +1,7 @@
 const router = require('express').Router();
-const { createGame, joinGame, getGame, startGame, getUserGamesRequest, getPlayer, getPlayers, deleteGame, getAllGames } = require('../controllers/GameController.js')
+const { createGame, joinGame, getGame, startGame, getUserGamesRequest, getPlayer, getPlayers, deleteGame, getAllGames,
+    renamePlayer
+} = require('../controllers/GameController.js')
 const { isAdmin } = require("../middlewares/auth_middleware.js");
 
 // Admin
@@ -24,5 +26,6 @@ router.get('/:gameId', getGame);
 
 router.put('/:gameId/start', startGame);
 
+router.put('/:gameId/rename/:name', renamePlayer)
 
 module.exports = router;
