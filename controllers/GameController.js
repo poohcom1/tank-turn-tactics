@@ -227,3 +227,20 @@ module.exports.getAllGames = async function (req, res) {
 
     res.json(await joinGamesWithPlayer(gameList))
 }
+
+module.exports.renamePlayer = async function (req, res) {
+    try {
+        const name = req.params.name
+
+        const player = await Player.findOne({ game_id: req.params.gameId, user_id: req.user.id });
+
+        player.name = name;
+
+        await player.save()
+
+        res.sendStatus(200)
+    } catch (e) {
+        console.log(e)
+        res.status(500).send(e)
+    }
+}
