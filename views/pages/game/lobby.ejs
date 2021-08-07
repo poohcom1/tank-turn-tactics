@@ -1,56 +1,59 @@
 <%- include('../../partials/head.html') %>
 
-<h1>Waiting for "<%= gameName %>" to start</h1>
 
-<div>
-    <label for="invite">Invite link: </label>
-    <input id="invite" readonly/>
-    <button id="copy">Copy</button>
+<div class="section">
+    <div class="area">
+        <h1>Waiting for "<%= gameName %>" to start</h1>
 
-    <div id="playerList">
-        <h2>Players:</h2>
-    </div>
+        <label for="invite">Invite link: </label>
+        <input id="invite" readonly/>
+        <button id="copy">Copy</button>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const gameId = urlParams.get('game')
-    </script>
+        <div id="playerList">
+            <h2>Players:</h2>
+        </div>
 
-    <% if (isCreator) { %>
-        <br>
-        <button id="startGame">Start!</button>
         <script>
-            const startButton = document.querySelector("#startGame");
-
-            startButton.addEventListener("click", () => {
-                fetch(`/game/${ gameId }/start`, { method: 'PUT' })
-                    .then(() => window.location.reload())
-            })
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameId = urlParams.get('game')
         </script>
-    <% } %>
 
-    <script>
-        const inviteInput = document.querySelector("#invite")
+        <% if (isCreator) { %>
+            <br>
+            <button id="startGame">Start!</button>
+            <script>
+                const startButton = document.querySelector("#startGame");
 
-        inviteInput.value = location.protocol + '//' + window.location.host + "/join?game=" + gameId
+                startButton.addEventListener("click", () => {
+                    fetch(`/game/${ gameId }/start`, { method: 'PUT' })
+                        .then(() => window.location.reload())
+                })
+            </script>
+        <% } %>
 
-        document.querySelector("#copy").onclick = () => {
-            /* Select the text field */
-            inviteInput.select();
-            inviteInput.setSelectionRange(0, 99999); /* For mobile devices */
+        <script>
+            const inviteInput = document.querySelector("#invite")
 
-            /* Copy the text inside the text field */
-            document.execCommand("copy");
-        }
+            inviteInput.value = location.protocol + '//' + window.location.host + "/join?game=" + gameId
 
-        const playersDiv = document.querySelector("#playerList")
+            document.querySelector("#copy").onclick = () => {
+                /* Select the text field */
+                inviteInput.select();
+                inviteInput.setSelectionRange(0, 99999); /* For mobile devices */
 
-        fetch(`/game/${ gameId }/players`)
-            .then(res => res.json())
-            .then(players => {
-                players.forEach(player => playersDiv.innerHTML += `<p style="color: var(--contrast)">${ player.name }</p>`)
-            })
-    </script>
+                /* Copy the text inside the text field */
+                document.execCommand("copy");
+            }
+
+            const playersDiv = document.querySelector("#playerList")
+
+            fetch(`/game/${ gameId }/players`)
+                .then(res => res.json())
+                .then(players => {
+                    players.forEach(player => playersDiv.innerHTML += `<p style="color: var(--contrast)">${ player.name }</p>`)
+                })
+        </script>
+    </div>
 </div>
 
 <%- include('../../partials/footer.html') %>
