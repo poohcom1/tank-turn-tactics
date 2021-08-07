@@ -57,15 +57,21 @@ module.exports.joinGame = async function (req, res) {
     const responseJson = req.body;
 
     let game;
+    let player
 
     try {
         game = await Game.findById(responseJson.gameId)
+        player = await Player.findOne({ game_id: responseJson.gameId, user_id: req.user.id })
     } catch (e) {
         return res.redirect('/join?error=nonexistent')
     }
 
     if (game.hasStarted) {
-        return res.redirect('/join?error=gameStarted')
+        if (player) {
+            return res.redirect('/play?game=' + responseJson.gameId)
+        } else {
+            return res.redirect('/join?error=gameStarted')
+        }
     }
 
     const existingPlayers = await Player.find({ user_id: req.user.id, game_id: game._id })

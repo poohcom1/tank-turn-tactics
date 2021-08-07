@@ -22,7 +22,7 @@ async function move(game, player, data) {
     }
 
     for (let i = 1; i < positions.length; i++) {
-        if (!isAdjacent(positions[i-1], positions[i])) {
+        if (!isAdjacent(positions[i - 1], positions[i])) {
             return { status: 403, message: 'Positions not adjacent' }
         }
     }
@@ -30,7 +30,7 @@ async function move(game, player, data) {
     const position = positions[positions.length - 1]
 
     if (checkGrid(position, game)) {
-        if ( ( await Player.find({ position: positions }) ).length !== 0 ) {
+        if ((await Player.find({ position: positions })).length !== 0) {
             return { status: 403, message: 'Collision with another player' };
         }
 
@@ -63,28 +63,32 @@ async function attack(game, player, data) {
     try {
         targetPlayer = await Player.findById(data.target_id);
     } catch (e) {
-        return { status: 500, message: e};
+        return { status: 500, message: e };
     }
 
     if (!checkRange(player.position, targetPlayer.position, player.range)) {
-        return { status: 403, message: 'Out of bounds'};
+        return { status: 403, message: 'Out of bounds' };
     }
 
     try {
-        if (targetPlayer.health > 0) {
-            targetPlayer.health -= 1;
-            await targetPlayer.save();
+        if (targetPlayer.health <= 0) return { status: 500, message: 'Player already ead' }
+
+        targetPlayer.health -= 1;
+        await targetPlayer.save();
+
+        if (targetPlayer.health <= 0) {
+            player.actions += targetPlayer.actions/2
         }
 
         player.actions--;
         await player.save()
 
-        return { status: 200, message: 'ok'};
+        return { status: 200, message: 'ok' };
     } catch (e) {
         await targetPlayer.updateOne(targetPlayer)
         await player.updateOne(player)
 
-        return { status: 500, message: e};
+        return { status: 500, message: e };
     }
 }
 
@@ -96,7 +100,7 @@ async function attack(game, player, data) {
  * @return {Promise<{message: string, status: number}>}
  */
 async function upgrade(game, player, data) {
-    const UPGRADES = ["range", "sight", "health"]
+    const UPGRADES = [ "range", "sight", "health" ]
     const COST = {
         health: 2,
         range: 1,
@@ -104,7 +108,7 @@ async function upgrade(game, player, data) {
     }
 
     if (!UPGRADES.includes(data.upgrade)) {
-        return { status: 403, message: 'Unknown upgrade'}
+        return { status: 403, message: 'Unknown upgrade' }
     }
 
     try {
@@ -113,15 +117,15 @@ async function upgrade(game, player, data) {
         player.actions -= COST[data.upgrade] * parseInt(data.count);
 
         if (player.actions < 0) {
-            return { status: 501, message: "Not enough energy"}
+            return { status: 501, message: "Not enough energy" }
         }
 
         await player.save()
 
-        return { status: 200, message: 'ok'}
+        return { status: 200, message: 'ok' }
     } catch (e) {
         console.log(e)
-        return { status: 501, message: e}
+        return { status: 501, message: e }
     }
 }
 
@@ -144,9 +148,9 @@ async function give(game, player, data) {
         await player.save();
         await targetPlayer.save();
 
-        return { status: 200, message: 'ok'}
+        return { status: 200, message: 'ok' }
     } catch (e) {
-        return { status: 500, message: e};
+        return { status: 500, message: e };
     }
 }
 
@@ -184,7 +188,7 @@ async function moveRequest(req, res) {
         if (result.status !== 200) console.log(result.message)
         res.status(result.status).send(result.message)
     } else {
-        const success = await logAction(req.game, req.player._id,  'move', req.body, 'actions')
+        const success = await logAction(req.game, req.player._id, 'move', req.body, 'actions')
 
         if (success) {
             res.status(200).send('ok')
@@ -213,15 +217,21 @@ async function attackRequest(req, res) {
 
 }
 
-async function upgradeRequest (req, res) {
+async function upgradeRequest(req, res) {
     if (!req.game.doActionQueue) {
         const result = await upgrade(req.game, req.player, { upgrade: req.params.upgrade, count: req.params.count });
 
-        await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade, count: req.params.count }, 'actionLog')
+        await logAction(req.game, req.player._id, 'upgrade', {
+            upgrade: req.params.upgrade,
+            count: req.params.count
+        }, 'actionLog')
 
         res.status(result.status).send(result.message)
     } else {
-        const success = await logAction(req.game, req.player._id, 'upgrade', { upgrade: req.params.upgrade, count: req.params.count }, 'actions')
+        const success = await logAction(req.game, req.player._id, 'upgrade', {
+            upgrade: req.params.upgrade,
+            count: req.params.count
+        }, 'actions')
 
         if (success) {
             res.status(200).send('ok')
