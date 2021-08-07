@@ -1,7 +1,5 @@
 # Tank Turn Tactics
 
-This project is still in its very early stage of development!
-
 
 ## Setup
 1. Copy the `sample.env` file and rename it to `.env` to set up environment variables
