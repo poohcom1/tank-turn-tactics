@@ -3,6 +3,8 @@ const { checkRange, checkGrid } = require('../libs/game_utils.js')
 // All routes to game will have req.game and req.player
 const Player = require("../models/PlayerModel.js");
 
+const GIVE_RANGE_INCREASE = 2;
+
 function isAdjacent(pos1, pos2) {
     return (Math.abs(pos1.x - pos2.x) === 1 || Math.abs(pos1.y - pos2.y) === 1) && !(pos1.x === pos2.x && pos1.y === pos2.y)
 }
@@ -139,8 +141,14 @@ async function upgrade(game, player, data) {
 async function give(game, player, data) {
     let targetPlayer;
 
+
+
     try {
         targetPlayer = await Player.findById(data.target_id);
+
+        if (!checkRange(player.position, targetPlayer.position, player.range + GIVE_RANGE_INCREASE)) {
+            return { status: 500, message: 'Out of range' };
+        }
 
         player.actions -= parseInt(data.count);
         targetPlayer.actions += parseInt(data.count);
