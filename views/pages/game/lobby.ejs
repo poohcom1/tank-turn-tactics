@@ -1,9 +1,10 @@
 <%- include('../../partials/head.html') %>
 
+<script src="https://kit.fontawesome.com/6aa60c7e71.js" crossorigin="anonymous"></script>
 
 <div class="section">
     <div class="area">
-        <h1>Waiting for "<%= gameName %>" to start</h1>
+        <h1>Waiting for "<%= game.name %>" to start</h1>
 
         <label for="invite">Invite link: </label>
         <input id="invite" readonly/>
@@ -47,13 +48,88 @@
 
             const playersDiv = document.querySelector("#playerList")
 
-            fetch(`/game/${ gameId }/players`)
-                .then(res => res.json())
-                .then(players => {
-                    players.forEach(player => playersDiv.innerHTML += `<p style="color: var(--contrast)">${ player.name }</p>`)
-                })
+            const game = JSON.parse('<%- JSON.stringify(game) %>')
+            let players = game.players
+            let userId = game.user_id
+
+            const editableDiv = document.createElement('div')
+
+            let previousName;
+
+            const playerDiv = (player, isUser) => {
+                const div = document.createElement('div')
+
+                const text = document.createElement('span')
+                text.id = isUser ? "userPlayerName" : "playerName"
+                text.className = "playerName"
+                text.innerHTML = player.name
+
+                div.appendChild(text)
+
+                if (isUser) {
+                    previousName = player.name
+                    const editButton = document.createElement('i')
+                    editButton.className = 'fas fa-pencil-alt'
+
+                    editButton.onclick = () => {
+                        text.innerHTML = "";
+
+                        const input = document.createElement('input')
+                        input.value = previousName
+                        input.onkeypress = (e) => {
+                            if (e.code === "Enter") {
+                                if (input.value === "") {
+                                    alert("Username cannot be empty!")
+                                    text.innerHTML = previousName
+                                    return;
+                                }
+
+                                fetch(`/game/${ game._id }/rename/${ input.value }`, { method: 'PUT' })
+                                    .then(() => {
+                                        text.innerHTML = input.value
+                                        previousName = input.value
+                                    })
+                                    .catch(e => {
+                                        alert(e)
+                                        window.location.reload()
+                                    })
+                            }}
+                        text.appendChild(input)
+                    }
+
+                    div.appendChild(editButton)
+                }
+                return div
+            }
+
+            players.forEach(player => {
+                if (player.user_id === game.user_id) {
+                    document.getElementById('playerList').appendChild(playerDiv(player, true))
+                } else {
+                    document.getElementById('playerList').appendChild(playerDiv(player))
+                }
+            })
         </script>
     </div>
 </div>
+
+<style>
+    i {
+        margin-left: 5px;
+    }
+
+    i:hover {
+        cursor: pointer;
+    }
+
+    input {
+        margin-left: 0;
+        width: 150px;
+    }
+
+    .playerName {
+        color: var(--contrast)
+    }
+</style>
 
 <%- include('../../partials/footer.html') %>
