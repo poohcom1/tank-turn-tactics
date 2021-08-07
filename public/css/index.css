@@ -215,3 +215,7 @@ select {
     flex-direction: row;
     height: 100%;
 }
+
+.area {
+    margin: 25px;
+}
