@@ -73,11 +73,9 @@ root
     
 #### Extended Designs
 
- - **Action Queue**: Actions are performed all at once at the end of the day
- - **Fog of war**: Sight is included as a stat alongside range. Player can only see up to their sight stat, even if their 
-   range is greater
- - **Spying**: Actions are not known until they are executed at the end of the day. However, actions will be broadcasted to 
+- [ ] **Action Queue**: Actions are performed all at once at the end of the day
+- [ ] **Fog of war**: Sight is included as a stat alongside range. Player can only see up to their sight stat, even if their range is greater
+- [ ] **Spying**: Actions are not known until they are executed at the end of the day. However, actions will be broadcasted to 
    anyone online at the moment, to add the possibility of 'spying' on other players
- - **Loot**: Players are awarded half the action points of anyone they killed
- - **Bounty**: Each day, players are assigned a bounty of another player at random. If they kill said player, they will 
-    received all of the action points of that player
+- [x] **Loot**: Players are awarded half the action points of anyone they killed
+- [ ] **Bounty**: Each day, players are assigned a bounty of another player at random. If they kill said player, they will received all of the action points of that player
