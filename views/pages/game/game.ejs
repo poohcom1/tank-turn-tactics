@@ -9,7 +9,13 @@
 <body>
 
 <div id="statsPanel">
-
+    <span id="deathMessage"></span>
+    <span>|</span>
+    <span id="gameName"></span>
+    <span id="gameTime"></span>
+    <span id="actionInterval"></span>
+    <span id="actionsPerInterval"></span>
+    <span>|</span>
 </div>
 
 <div id="gameContainer"></div>
@@ -38,6 +44,7 @@
 
     <span class="confirm"><a class="cancel">✘</a><a class="confirm">✓</a></span>
 
+    <div id="logs"></div>
 </div>
 
 <div id="hintPanel" class="panel">
@@ -49,28 +56,64 @@
 <script type="text/javascript" src="js/game-engine/Game.js"></script>
 
 <script>
-    let game = JSON.parse('<%- JSON.stringify(game) %>')
-    let userPlayer = game.players.find(player => player.user_id === game.user_id)
+    let game;
+    let allPlayers = []
+    let userPlayer;
+    let gameOver
+    let isDead;
+    let actions
+    let showPlayerOption;
 
-    game.players = game.players.filter(p => p.health > 0)
+    let refetching = false;
 
-    let gameOver = false;
-    const isDead = userPlayer.health <= 0;
+    function initGame(gameToInit) {
+        game = gameToInit;
+        userPlayer = game.players.find(player => player.user_id === game.user_id)
+        allPlayers = game.players
+        game.players = game.players.filter(p => p.health > 0)
 
-    if (game.players.filter(player => player.health > 0).length <= 1) {
-        gameOver = true;
+        isDead = userPlayer.health <= 0;
+        gameOver = false;
 
-        document.querySelector("#winScreen").style.display = 'block'
-        document.querySelector("#winScreen p").innerHTML = game.players.find(player => player.health > 0).name + " has emerged victorious"
+        if (game.players.filter(player => player.health > 0).length <= 1) {
+            gameOver = true;
+
+            document.querySelector("#winScreen").style.display = 'block'
+            document.querySelector("#winScreen p").innerHTML = game.players.find(player => player.health > 0).name + " has emerged victorious"
+        }
+
+        actions = userPlayer.actions
+        showPlayerOption = !gameOver && userPlayer.actions > 0;
+    }
+
+    initGame(JSON.parse('<%- JSON.stringify(game) %>'));
+
+    // Fetching
+    function refetch() {
+        refetching = true;
+        document.body.className = 'waiting'
+        return fetch(`/game/${ game._id }`, { method: "GET" })
+            .then(res => res.json())
+            .then(newGame => {
+                initGame(newGame)
+
+                updateTanks()
+                updateInfo()
+                updateLogs()
+                actionGuis.forEach(gui => gui.init())
+            })
+            .finally(() => {
+                refetching = false;
+                document.body.className = ''
+            })
     }
 
     const size = game.size
     const GRID_SIZE = 50;
 
-    const giveRangeIncrease = 2;
+    const GIVE_RANGE_OFFSET = 2;
 
     // Scores
-    let actions = userPlayer.actions
 
     const upgradeButtons = []
 
@@ -99,33 +142,11 @@
     // Set up
     const parentDiv = document.querySelector('#gameContainer')
     const gridPadding = GRID_SIZE * 2;
-    const footerPadding = 100;
-    const rightPadding = 300;
+    const footerPadding = 150;
+    const rightPadding = 150;
     const gameDim = {
         width: size.width * GRID_SIZE + gridPadding + rightPadding,
         height: size.height * GRID_SIZE + gridPadding + footerPadding
-    }
-
-    // Fetching
-    function refetch() {
-        return fetch(`/game/${ game._id }`, { method: "GET" })
-            .then(res => res.json())
-            .then(newGame => {
-                game = newGame;
-                game.players = game.players.filter(p => p.health > 0)
-                userPlayer = game.players.find(player => player.user_id === game.user_id)
-                actions = userPlayer.actions
-                updateTanks()
-                updateInfo()
-                actionGuis.forEach(gui => gui.init())
-
-                if (game.players.filter(player => player.health > 0).length <= 1) {
-                    gameOver = true;
-
-                    document.querySelector("#winScreen").style.display = 'block'
-                    document.querySelector("#winScreen p").innerHTML = game.players.find(player => player.health > 0).name + " has emerged victorious"
-                }
-            })
     }
 
     const backgroundDriver = initDriver(parentDiv, Driver.MODE_PASSIVE, gameDim)
@@ -133,7 +154,6 @@
     backgroundDriver.canvas_ctx.font = '12px Arial'
 
     let focused = false;
-    let showPlayerOption = !gameOver && userPlayer.actions > 0;
     let hoveredBox = { x: GRID_SIZE, y: GRID_SIZE, coords: { x: 0, y: 0 } }
 
     if (gameOver) {
@@ -207,9 +227,9 @@
         }
     })
 
-    const objectDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
-    objectDriver.canvas_ctx.save();
-    objectDriver.canvas_ctx.font = 'bold 15px Uni-Sans'
+    const tankDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
+    tankDriver.canvas_ctx.save();
+    tankDriver.canvas_ctx.font = 'bold 15px Uni-Sans'
 
     let selectedTank = null;
     const ACTION_STATES = {
@@ -264,7 +284,8 @@
                         disableUpgrades()
                     }
 
-                    if (userPlayer.actions <= 0) showPlayerOption = false;
+                    console.log(refetching)
+                    if (userPlayer.actions <= 0 || refetching) showPlayerOption = false;
                     updateInfo()
                 }
             }
@@ -298,6 +319,12 @@
             const color = this.player.user_id === game.user_id ? 'rgb(0,255,195)' : 'rgb(255,65,65)'
             ctx.shadowColor = 'transparent'
 
+            this.drawTriangle(ctx, color)
+
+            if (!this.player) {
+                refetch()
+            }
+
             // Name
             if (!(actionState !== ACTION_STATES.SELECT && this === userTank)) {
                 ctx.fillStyle = selectedTank === this ? 'white' : 'rgba(255,255,255,0.45)'
@@ -306,6 +333,7 @@
                 ctx.fillText(this.player.health, this.x + this.width / 2, this.y - 10)
             }
 
+            if (gameOver) return;
 
             if (selectedTank === this && actionState === ACTION_STATES.SELECT) {
                 ctx.shadowColor = 'white'
@@ -365,41 +393,30 @@
                 if (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.GV) {
                     // Give range
                     ctx.beginPath()
-                    ctx.arc(center.x + this.width / 2, center.y + this.height / 2, (this.player.range + giveRangeIncrease) * this.width + this.width / 2, 0, 2 * Math.PI)
+                    ctx.arc(center.x + this.width / 2, center.y + this.height / 2, (this.player.range + GIVE_RANGE_OFFSET) * this.width + this.width / 2, 0, 2 * Math.PI)
                     ctx.strokeStyle = "rgba(88,255,81,0.16)"
                     ctx.setLineDash([ 5, 2 ])
                     ctx.stroke()
                 }
             }
-            this.drawTriangle(ctx, color)
         }
     }
 
-    const tanks = game.players.map(player => new Tank(player))
-    tanks.forEach(t => objectDriver.components.push(t))
+    tankDriver.components = game.players.map(player => new Tank(player))
 
     function updateTanks() {
-        tanks.map(tank => {
-            const player = game.players.find(player => player._id === tank.player._id);
-            if (player) {
-                tank.refetch(player)
-            } else {
-                objectDriver.components.splice(objectDriver.components.indexOf(tank), 1)
-                tanks.splice(objectDriver.components.indexOf(tank), 1)
-            }
-        })
+        tankDriver.components = game.players.map(player => new Tank(player))
     }
 
-    let userTank = objectDriver.components.find(tank => tank.player.user_id === game.user_id) // Init selected tank
+    let userTank = tankDriver.components.find(tank => tank.player.user_id === game.user_id) // Init selected tank
 
     if (!isDead) {
         selectedTank = userTank
     } else {
-        selectedTank = tanks[0]
+        selectedTank = tankDriver.components[0]
     }
 
     const guiDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
-
 
     class ActionPopup extends Driver.ActiveComponent {
         constructor(text, xOffset, textAlign, state, color = '#fcda6d') {
@@ -489,7 +506,7 @@
     // Action guis
 
     // Move gui
-    const moveGui = new class extends Driver.ActiveComponent {
+    class MoveGui extends Driver.ActiveComponent {
         constructor() {
             super();
 
@@ -568,7 +585,7 @@
             if (this.destinations.includes(hoveredBox)) {
                 // Final spot
                 if (this.destinations.indexOf(hoveredBox) === this.destinations.length - 1) {
-                    updateHint("Move", `[${ getChar(hoveredBox.coords.x) }${ hoveredBox.coords.y + 1 }] ` + "Press 'Enter' or click again to commit movement", "Press escape to cancel" , c_moveLine)
+                    updateHint("Move", `[${ getChar(hoveredBox.coords.x) }${ hoveredBox.coords.y + 1 }] ` + "Press 'Enter' or click again to commit movement", "Press escape to cancel", c_moveLine)
                     moveType = MOVE.CONFIRM
                 } else {
                     updateHint("Move", "Click to remove succeeding waypoints", "Press escape to cancel")
@@ -720,8 +737,8 @@
 
             // Mark targets
             game.players
-                .filter(player => inRange(hoveredBox.coords, player.position, userPlayer.range + giveRangeIncrease) && player !== userPlayer)
-                .map(player => tanks.find(t => coordsEquals(t.box.coords, player.position)))
+                .filter(player => inRange(hoveredBox.coords, player.position, userPlayer.range + GIVE_RANGE_OFFSET) && player !== userPlayer)
+                .map(player => tankDriver.components.find(t => coordsEquals(t.box.coords, player.position)))
                 .forEach(tank => {
                     if (tank.box === hoveredBox) return
 
@@ -746,12 +763,12 @@
             game.players
                 .forEach(p => {
                     if (p._id === userPlayer._id) return;
-                    const tank = tanks.find(t => coordsEquals(t.box.coords, p.position));
+                    const tank = tankDriver.components.find(t => coordsEquals(t.box.coords, p.position));
                     if (tank.box === hoveredBox) return
 
                     if (inRange(tank.box.coords, hoveredBox.coords, p.range)) {
                         ctx.strokeStyle = c_atkRange
-                    } else if (inRange(tank.box.coords, hoveredBox.coords, p.range + giveRangeIncrease)) {
+                    } else if (inRange(tank.box.coords, hoveredBox.coords, p.range + GIVE_RANGE_OFFSET)) {
                         ctx.strokeStyle = c_giveRange
                     } else {
                         return
@@ -773,11 +790,9 @@
         }
     }
 
-
-    // Attack gui
-    const attackGui = new class extends Driver.ActiveComponent {
-        constructor(props) {
-            super(props);
+    // Attack & Give gui
+    class TargetGui {
+        constructor(state, color, increaseCountCondition, rangeOffset = 0) {
             /**
              * @type {Tank[]}
              */
@@ -785,27 +800,38 @@
             this.hoverOnSelectedTarget = false;
             this.confirming = false;
 
+            this.count = 1;
+
+            this.state = state;
+            this.rangeOffset = rangeOffset
+            this.color = color
+
+            this.increaseCountCondition = increaseCountCondition;
+
             if (userTank)
                 this.init();
         }
 
         init() {
             this.targets = game.players
-                .filter(player => inRange(userTank.box.coords, player.position, userPlayer.range) && player !== userPlayer)
-                .map(player => tanks.find(t => coordsEquals(t.box.coords, player.position)))
+                .filter(player => inRange(userTank.box.coords, player.position, userPlayer.range + this.rangeOffset) && player !== userPlayer)
+                .map(player => tankDriver.components.find(t => coordsEquals(t.box.coords, player.position)))
 
             /**
              * @type {Tank}
              */
             this.selectedTarget = null;
+
+            this.count = 1;
         }
 
         confirm() {
-            console.log("Attacking...")
+            console.log("Sending " + this.state)
+            refetching = true;
             selectedTank === userTank
-            fetch(`/action/${ game._id }/attack/${ this.selectedTarget.player._id }`, { method: 'POST' })
+            fetch(`/action/${ game._id }/${ this.state }/${ this.selectedTarget.player._id }/actions/${ this.count }`, { method: 'POST' })
                 .then(() => {
-                    console.log("Attack success")
+                    console.log("Success")
                 })
                 .catch(e => {
                     console.log(e)
@@ -817,17 +843,63 @@
         }
 
         cancel() {
+            this.confirming = false;
+            Driver.overrideMouse = false;
+
             this.init();
             actionState = ACTION_STATES.SELECT
             updateInfo()
-            this.confirming = false;
-            document.body.className = ''
         }
 
         update(driver) {
-            if (actionState !== ACTION_STATES.ATK) return;
+            if (!showPlayerOption) {
+                actionState = ACTION_STATES.SELECT
+            }
+            if (actionState === this.state) Driver.overrideMouse = this.hoverOnSelectedTarget;
+
+            if (this.selectedTarget && this.hoverOnSelectedTarget) {
+                if (driver.mouse_events.scrollUp && this.count < userPlayer.actions && this.increaseCountCondition(this.count)) {
+                    this.count++;
+                } else if (driver.mouse_events.scrollDown && this.count > 1) {
+                    this.count--;
+                }
+            }
+        }
+
+        markTargets(ctx, box, color) {
+        }
+
+        redraw(driver) {
+            if (actionState !== this.state) return;
+            const ctx = driver.canvas_ctx;
+
+            this.targets.forEach(t => {
+                if (this.selectedTarget && t === this.selectedTarget) {
+                    this.markTargets(ctx, t.box, this.color)
+                    ctx.fillStyle = this.color
+                    ctx.textBaseline = 'top'
+                    ctx.textAlign = 'center'
+
+                    ctx.font = '15px Hollow'
+                    ctx.fillText(this.count, center(t.box).x, t.box.y - GRID_SIZE * 3 / 4)
+                } else {
+                    this.markTargets(ctx, t.box)
+                }
+            })
+        }
+    }
+
+    // Attack gui
+    class AttackGui extends TargetGui {
+        constructor() {
+            super(ACTION_STATES.ATK, c_atkMarkedTarget, count => count < this.selectedTarget.player.health);
+        }
+
+        update(driver) {
+            super.update(driver)
+            if (actionState !== this.state || !showPlayerOption) return;
             if (this.confirming) {
-                updateHint("Attack", "Engaging...", "." , c_atkMarkedTarget)
+                updateHint("Attack", "Engaging...", ".", c_atkMarkedTarget)
                 return
             }
 
@@ -857,9 +929,9 @@
                 }
             } else {
                 if (this.selectedTarget === hoverTarget) {
-                    updateHint("Attack", "Click to commence attack on " + this.selectedTarget.player.name, "Press escape to cancel" , c_atkMarkedTarget)
+                    updateHint("Attack", "Click to commence attack on " + this.selectedTarget.player.name + ". Scroll to adjust amount", "Press escape to cancel", c_atkMarkedTarget)
                     this.hoverOnSelectedTarget = true;
-                    actions = userPlayer.actions - 1
+                    actions = userPlayer.actions - this.count
                     updateInfo()
                     attackState = ATTACK.ATTACK
                 } else {
@@ -928,74 +1000,20 @@
 
             ctx.shadowBlur = 0
         }
-
-        redraw(driver) {
-            if (actionState !== ACTION_STATES.ATK) return;
-            const ctx = driver.canvas_ctx;
-
-            this.targets.forEach(t => {
-                if (this.selectedTarget && t === this.selectedTarget) {
-                    this.markTargets(ctx, t.box, c_atkMarkedTarget)
-                } else {
-                    this.markTargets(ctx, t.box)
-                }
-
-            })
-
-
-        }
     }
 
     // Give gui
-    giveGui = new class extends Driver.ActiveComponent {
-        constructor(props) {
-            super(props);
-            /**
-             * @type {Tank[]}
-             */
-            this.targets = [];
-            this.hoverOnSelectedTarget = false;
-            this.confirming = false;
-
-            if (userTank)
-                this.init();
+    class GiveGui extends TargetGui {
+        constructor() {
+            super(ACTION_STATES.GV, c_giveLine, count => true, GIVE_RANGE_OFFSET);
         }
 
-        init() {
-            this.targets = game.players
-                .filter(player => inRange(userTank.box.coords, player.position, userPlayer.range + giveRangeIncrease) && player !== userPlayer)
-                .map(player => tanks.find(t => coordsEquals(t.box.coords, player.position)))
-
-            /**
-             * @type {Tank}
-             */
-            this.selectedTarget = null;
-        }
-
-        confirm() {
-            console.log("Giving...")
-            selectedTank === userTank
-
-            fetch(`/action/${ game._id }/give/${ this.selectedTarget.player._id }/actions/1`, { method: 'POST' })
-                .then(() => {
-                    console.log("Giving success")
-                    refetch()
-                    this.cancel()
-                })
-        }
-
-        cancel() {
-            this.init();
-            actionState = ACTION_STATES.SELECT
-            updateInfo()
-            this.confirming = false;
-            document.body.className = ''
-        }
 
         update(driver) {
-            if (actionState !== ACTION_STATES.GV) return;
+            super.update(driver)
+            if (actionState !== this.state) return;
             if (this.confirming) {
-                updateHint("Support", "Awaiting response")
+                updateHint("Support", "Awaiting response", '.', c_giveLine)
                 return;
             }
 
@@ -1025,9 +1043,9 @@
                 }
             } else {
                 if (this.selectedTarget === hoverTarget) {
-                    updateHint("Support", "Click to send energy points", "Press escape to cancel", c_giveLine)
+                    updateHint("Support", "Click to send energy points. Scroll to adjust amount", "Press escape to cancel", c_giveLine)
                     this.hoverOnSelectedTarget = true;
-                    actions = userPlayer.actions - 1
+                    actions = userPlayer.actions - this.count
                     updateInfo()
                     supportState = SUPPORT.ATTACK
                 } else {
@@ -1081,23 +1099,11 @@
             ctx.shadowBlur = 0
         }
 
-        redraw(driver) {
-            if (actionState !== ACTION_STATES.GV) return;
-            const ctx = driver.canvas_ctx;
-
-            this.targets.forEach(t => {
-                if (this.selectedTarget && t === this.selectedTarget) {
-                    this.markTargets(ctx, t.box, c_giveLine)
-                } else {
-                    this.markTargets(ctx, t.box)
-                }
-
-            })
-
-
-        }
     }
 
+    const moveGui = new MoveGui()
+    const attackGui = new AttackGui()
+    const giveGui = new GiveGui()
 
     actionGuis = [ moveGui, attackGui, giveGui ]
 
@@ -1200,10 +1206,11 @@
     })
 
     backgroundDriver.run(10);
-    objectDriver.run(16);
+    tankDriver.run(16);
     guiDriver.run(16)
 
     updateInfo()
+    setTimeout(updateLogs, 5)
 
     function updateInfo() {
         // Info panel
@@ -1221,6 +1228,63 @@
 
         document.querySelector('#health').innerHTML = "Health: " + player.health
         document.querySelector('#range').innerHTML = "Range: " + player.range
+
+    }
+
+    function updateLogs() {
+        // Logs
+        const logDiv = document.querySelector('#logs');
+
+        let currentLogs;
+
+        if (!this.previousActionLog) {
+            currentLogs = game.actionLog
+            this.previousActionLog = game.actionLog;
+        } else {
+            currentLogs = game.actionLog.slice(this.previousActionLog.length, game.actionLog.length)
+            this.previousActionLog = game.actionLog;
+        }
+
+        currentLogs.forEach(action => {
+            let date = new Date(action.createdAt)
+            let message = "[" + date.toLocaleTimeString('en-GB', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit'
+            }) + "] ";
+            const player = allPlayers.find(p => p._id === action.player_id)
+            const target = allPlayers.find(p => p._id === action.target_id)
+
+            const playerStyle = player._id === userPlayer._id ? 'userPlayerName' : 'playerName'
+
+            let targetStyle;
+            if (target)
+                targetStyle = target._id === userPlayer._id ? 'userPlayerName' : 'playerName'
+
+            const divStyle = player._id === userPlayer._id || (target && target._id === userPlayer._id) ? 'playerActionLog' : ''
+
+            switch (action.action) {
+                case 'move':
+                    const finalPosition = action.positions[action.positions.length - 1]
+                    message += `<span class="${ playerStyle }">${ shortenName(player.name) }</span> ➟ <span class="location">${ getChar(finalPosition.x) }${ finalPosition.y + 1 }</span>`
+                    break;
+                case 'attack':
+                    const symbol = action.killed ? '💀' : '⚔'
+                    if (target._id === userPlayer._id && action.killed) {
+                        statsPanel.querySelector('#deathMessage').innerHTML = `You were killed by ${ player.name }`
+                    }
+                    message += `<span class="${ playerStyle }">${ shortenName(player.name) }</span> ${ symbol } <span class="${ targetStyle }">${ shortenName(target.name) }</span>`
+                    break;
+                case 'give':
+                    message += `<span class="${ playerStyle }">${ shortenName(player.name) }</span> 🔰 <span class="${ targetStyle }">${ shortenName(target.name) }</span>`
+                    break;
+                default:
+                    message = '';
+            }
+            if (message) logDiv.innerHTML += `<p class="${ divStyle }">${ message }</p>`
+        })
+
+        logDiv.scrollTop = logDiv.scrollHeight;
     }
 
     function updateHint(title, text, minorHint = ".", color = 'white') {
@@ -1244,7 +1308,6 @@
 
     let actionsToAdd = {}
 
-
     function disableUpgrades() {
         upgradeButtons.forEach(a => a.classList.add('disabled'))
     }
@@ -1253,6 +1316,7 @@
         upgradeButtons.forEach(a => a.classList.remove('disabled'))
     }
 
+    // Info panel
     document.querySelectorAll("#infoPanel .upgrade").forEach(node => {
         const upgradeName = node.dataset.upgrade;
         const actionCost = parseInt(node.dataset.cost);
@@ -1325,10 +1389,27 @@
         document.querySelectorAll('.actionsToAdd').forEach(n => n.innerHTML = '')
         updateInfo()
     }
+
+    // Stats panel
+    const statsPanel = document.querySelector('#statsPanel')
+
+    statsPanel.querySelector('#gameName').innerHTML = game.name;
+    if (!gameOver) {
+        statsPanel.querySelector('#gameTime').innerHTML = dateTimeDiff(new Date(), new Date(game.createdAt))
+        setInterval(() => {
+            statsPanel.querySelector('#gameTime').innerHTML = dateTimeDiff(new Date(), new Date(game.createdAt))
+        }, 1000)
+    } else {
+        statsPanel.querySelector('#gameTime').innerHTML = dateTimeDiff(new Date(), new Date(game.updatedAt))
+    }
+
+    statsPanel.querySelector('#actionInterval').innerHTML = "Interval Time: " + game.turnTime + " hrs";
+    statsPanel.querySelector('#actionsPerInterval').innerHTML = "Actions per interval: " + game.actionsPerInterval;
 </script>
 
 <%- include('../../partials/footer.html') %>
 </body>
+
 
 <style>
     html, body {
@@ -1351,8 +1432,12 @@
     }
 
     #infoPanel {
+        display: flex;
+        flex-direction: column;
         position: fixed;
         right: 0;
+        max-height: 70%;
+        overflow-y: hidden;
     }
 
     #infoPanel h3 {
@@ -1368,6 +1453,69 @@
     #infoPanel p {
         color: #b6dad7;
     }
+
+
+    #infoPanel a {
+        font-size: 16px;
+        display: inline-block;
+        -webkit-user-select: none; /* Safari */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* IE10+/Edge */
+        user-select: none; /* Standard */
+    }
+
+    #infoPanel a.disabled {
+        color: gray;
+        cursor: default;
+    }
+
+    .upgrade {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .confirm {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    #logs {
+        overflow-y: scroll;
+        flex-grow: 1;
+        border-radius: 15px;
+    }
+
+    #logs p {
+        padding: 5px;
+        margin-right: 5px;
+    }
+
+    #logs p.playerActionLog {
+        background-color: rgba(255, 131, 131, 0.44);
+        border-radius: 10px;
+    }
+
+    #logs .playerName {
+        color: var(--contrast);
+        font-weight: bold;
+    }
+
+    #logs .userPlayerName {
+        color: white;
+        font-weight: bold;
+    }
+
+    #logs .targetName {
+        color: red;
+        font-weight: bold;
+    }
+
+    #logs .location {
+        font-weight: bold;
+        color: var(--contrast-blue);
+    }
+
 
     #hintPanel {
         position: fixed;
@@ -1408,28 +1556,12 @@
         background-color: black
     }
 
-    #infoPanel a {
-        font-size: 16px;
-        display: inline-block;
-        -webkit-user-select: none; /* Safari */
-        -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* IE10+/Edge */
-        user-select: none; /* Standard */
+    #statsPanel span {
+        font-family: Uni-Sans;
+        margin-right: 15px;
     }
 
-    #infoPanel a.disabled {
-        color: gray;
-        cursor: default;
-    }
-
-    .upgrade {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .confirm {
-        display: flex;
-        justify-content: flex-end;
+    #statsPanel #deathMessage {
+        color: red
     }
 </style>

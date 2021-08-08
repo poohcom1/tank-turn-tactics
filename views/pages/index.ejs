@@ -9,7 +9,7 @@
         <h2>Welcome, <%= user %></h2>
         <h3>Games:</h3>
         <div id="tableContainer">
-            <div id="gameTable" class="table--slide-down"></div>
+            <div id="gameTable"></div>
         </div>
     </div>
 </div>
@@ -33,6 +33,8 @@
 
     #tableContainer {
         position: relative;
+        overflow-y: scroll;
+        height: 75%;
     }
 
     #tableContainer:after {
@@ -51,6 +53,9 @@
     .table--slide-down {
         animation: 0.5s ease-out 0s 1 tableOpen;
         overflow: hidden;
+    }
+
+    #gameTable {
     }
 </style>
 

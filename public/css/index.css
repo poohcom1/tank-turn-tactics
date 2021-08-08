@@ -220,3 +220,18 @@ select {
 .area {
     margin: 25px;
 }
+
+/* Scrollbar */
+
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bg);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(171, 171, 171, 0.5);
+}
