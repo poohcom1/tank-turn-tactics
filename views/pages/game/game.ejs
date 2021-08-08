@@ -8,9 +8,7 @@
 
 <body>
 
-<div id="statsPanel">
-
-</div>
+<div id="statsPanel"></div>
 
 <div id="gameContainer"></div>
 
@@ -38,6 +36,11 @@
 
     <span class="confirm"><a class="cancel">✘</a><a class="confirm">✓</a></span>
 
+    <h4>Logs</h4>
+
+    <div id="logs">
+<!-- todo: add logs    -->
+    </div>
 </div>
 
 <div id="hintPanel" class="panel">
@@ -50,18 +53,42 @@
 
 <script>
     let game = JSON.parse('<%- JSON.stringify(game) %>')
-    let userPlayer = game.players.find(player => player.user_id === game.user_id)
+    let userPlayer;
+    let gameOver
+    let isDead;
+    let actions
 
-    game.players = game.players.filter(p => p.health > 0)
+    function initGame(gameToInit) {
+        game = gameToInit;
+        userPlayer = gameToInit.players.find(player => player.user_id === gameToInit.user_id)
+        gameToInit.players = gameToInit.players.filter(p => p.health > 0)
 
-    let gameOver = false;
-    const isDead = userPlayer.health <= 0;
+        isDead = userPlayer.health <= 0;
+        gameOver = false;
 
-    if (game.players.filter(player => player.health > 0).length <= 1) {
-        gameOver = true;
+        if (gameToInit.players.filter(player => player.health > 0).length <= 1) {
+            gameOver = true;
 
-        document.querySelector("#winScreen").style.display = 'block'
-        document.querySelector("#winScreen p").innerHTML = game.players.find(player => player.health > 0).name + " has emerged victorious"
+            document.querySelector("#winScreen").style.display = 'block'
+            document.querySelector("#winScreen p").innerHTML = gameToInit.players.find(player => player.health > 0).name + " has emerged victorious"
+        }
+
+        actions = userPlayer.actions
+    }
+
+    initGame(game);
+
+    // Fetching
+    function refetch() {
+        return fetch(`/game/${ game._id }`, { method: "GET" })
+            .then(res => res.json())
+            .then(newGame => {
+                initGame(newGame)
+
+                updateTanks()
+                updateInfo()
+                actionGuis.forEach(gui => gui.init())
+            })
     }
 
     const size = game.size
@@ -70,7 +97,6 @@
     const giveRangeIncrease = 2;
 
     // Scores
-    let actions = userPlayer.actions
 
     const upgradeButtons = []
 
@@ -99,33 +125,11 @@
     // Set up
     const parentDiv = document.querySelector('#gameContainer')
     const gridPadding = GRID_SIZE * 2;
-    const footerPadding = 100;
-    const rightPadding = 300;
+    const footerPadding = 150;
+    const rightPadding = 150;
     const gameDim = {
         width: size.width * GRID_SIZE + gridPadding + rightPadding,
         height: size.height * GRID_SIZE + gridPadding + footerPadding
-    }
-
-    // Fetching
-    function refetch() {
-        return fetch(`/game/${ game._id }`, { method: "GET" })
-            .then(res => res.json())
-            .then(newGame => {
-                game = newGame;
-                game.players = game.players.filter(p => p.health > 0)
-                userPlayer = game.players.find(player => player.user_id === game.user_id)
-                actions = userPlayer.actions
-                updateTanks()
-                updateInfo()
-                actionGuis.forEach(gui => gui.init())
-
-                if (game.players.filter(player => player.health > 0).length <= 1) {
-                    gameOver = true;
-
-                    document.querySelector("#winScreen").style.display = 'block'
-                    document.querySelector("#winScreen p").innerHTML = game.players.find(player => player.health > 0).name + " has emerged victorious"
-                }
-            })
     }
 
     const backgroundDriver = initDriver(parentDiv, Driver.MODE_PASSIVE, gameDim)
@@ -803,7 +807,7 @@
         confirm() {
             console.log("Attacking...")
             selectedTank === userTank
-            fetch(`/action/${ game._id }/attack/${ this.selectedTarget.player._id }`, { method: 'POST' })
+            fetch(`/action/${ game._id }/attack/${ this.selectedTarget.player._id }/actions/1`, { method: 'POST' })
                 .then(() => {
                     console.log("Attack success")
                 })
@@ -1221,6 +1225,13 @@
 
         document.querySelector('#health').innerHTML = "Health: " + player.health
         document.querySelector('#range').innerHTML = "Range: " + player.range
+
+        // Logs
+        const logDiv = document.querySelector('#logs');
+        game.actionLog.forEach(action => {
+            // console.log(action)
+            //logDiv.innerHTML += `<p>${ action.toString() }</p>`
+        })
     }
 
     function updateHint(title, text, minorHint = ".", color = 'white') {
@@ -1253,6 +1264,7 @@
         upgradeButtons.forEach(a => a.classList.remove('disabled'))
     }
 
+    // Info panel
     document.querySelectorAll("#infoPanel .upgrade").forEach(node => {
         const upgradeName = node.dataset.upgrade;
         const actionCost = parseInt(node.dataset.cost);
@@ -1351,8 +1363,12 @@
     }
 
     #infoPanel {
+        display: flex;
+        flex-direction: column;
         position: fixed;
         right: 0;
+        max-height: 70%;
+        overflow-y: hidden;
     }
 
     #infoPanel h3 {
@@ -1367,6 +1383,37 @@
 
     #infoPanel p {
         color: #b6dad7;
+    }
+
+
+    #infoPanel a {
+        font-size: 16px;
+        display: inline-block;
+        -webkit-user-select: none; /* Safari */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* IE10+/Edge */
+        user-select: none; /* Standard */
+    }
+
+    #infoPanel a.disabled {
+        color: gray;
+        cursor: default;
+    }
+
+    .upgrade {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .confirm {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    #logs {
+        overflow-y: scroll;
+        flex-grow: 1;
     }
 
     #hintPanel {
@@ -1406,30 +1453,5 @@
         bottom: 50%;
         transform: translateX(-50%);
         background-color: black
-    }
-
-    #infoPanel a {
-        font-size: 16px;
-        display: inline-block;
-        -webkit-user-select: none; /* Safari */
-        -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* IE10+/Edge */
-        user-select: none; /* Standard */
-    }
-
-    #infoPanel a.disabled {
-        color: gray;
-        cursor: default;
-    }
-
-    .upgrade {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .confirm {
-        display: flex;
-        justify-content: flex-end;
     }
 </style>

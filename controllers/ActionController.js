@@ -6,7 +6,9 @@ const Player = require("../models/PlayerModel.js");
 const GIVE_RANGE_INCREASE = 2;
 
 function isAdjacent(pos1, pos2) {
-    return (Math.abs(pos1.x - pos2.x) === 1 || Math.abs(pos1.y - pos2.y) === 1) && !(pos1.x === pos2.x && pos1.y === pos2.y)
+    return (Math.abs(pos1.x - pos2.x) === 1 || Math.abs(pos1.y - pos2.y) === 1)
+        && !(Math.abs(pos1.x - pos2.x) === 1 && Math.abs(pos1.y - pos2.y) === 1) // XOR
+        && !(pos1.x === pos2.x && pos1.y === pos2.y) // Not the same point
 }
 
 /**
@@ -23,23 +25,28 @@ async function move(game, player, data) {
         return { status: 403, message: 'Not enough actions' }
     }
 
-    for (let i = 1; i < positions.length; i++) {
-        if (!isAdjacent(positions[i - 1], positions[i])) {
+    const positionsFromPlayer = [player.position, ...positions]
+    for (let i = 1; i < positionsFromPlayer.length; i++) {
+        if (!isAdjacent(positionsFromPlayer[i - 1], positionsFromPlayer[i])) {
             return { status: 403, message: 'Positions not adjacent' }
         }
     }
 
-    const position = positions[positions.length - 1]
+    const finalPosition = positions[positions.length - 1]
 
-    if (checkGrid(position, game)) {
+    if (checkGrid(finalPosition, game)) {
         if ((await Player.find({ position: positions })).length !== 0) {
             return { status: 403, message: 'Collision with another player' };
         }
 
         try {
-            player.position.x = position.x;
-            player.position.y = position.y;
+            player.position.x = finalPosition.x;
+            player.position.y = finalPosition.y;
             player.actions -= positions.length;
+
+            if (player.actions < 0) {
+                return { status: 403, message: 'Not enough actions' }
+            }
 
             await player.save();
         } catch (e) {
@@ -57,7 +64,7 @@ async function move(game, player, data) {
  * @param {Object} game
  * @param {Object} player
  * @param {Object} data
- * @return {Promise<{message: string, status: number}>}
+ * @return {Promise<{message: string, status: number, killed: boolean}>}
  */
 async function attack(game, player, data) {
     let targetPlayer;
@@ -65,32 +72,36 @@ async function attack(game, player, data) {
     try {
         targetPlayer = await Player.findById(data.target_id);
     } catch (e) {
-        return { status: 500, message: e };
+        return { status: 500, message: e, killed: false };
     }
 
     if (!checkRange(player.position, targetPlayer.position, player.range)) {
-        return { status: 403, message: 'Out of bounds' };
+        return { status: 403, message: 'Out of bounds', killed: false };
     }
 
     try {
-        if (targetPlayer.health <= 0) return { status: 500, message: 'Player already ead' }
+        if (targetPlayer.health <= 0) return { status: 500, message: 'Player already dead', killed: false }
 
-        targetPlayer.health -= 1;
+        targetPlayer.health -= parseInt(data.count);
         await targetPlayer.save();
 
+        let killed = false;
+
+        // Killed
         if (targetPlayer.health <= 0) {
             player.actions += targetPlayer.actions/2
+            killed = true;
         }
 
-        player.actions--;
+        player.actions -= parseInt(data.count);
         await player.save()
 
-        return { status: 200, message: 'ok' };
+        return { status: 200, message: 'ok', killed };
     } catch (e) {
         await targetPlayer.updateOne(targetPlayer)
         await player.updateOne(player)
 
-        return { status: 500, message: e };
+        return { status: 500, message: e, killed: false };
     }
 }
 
@@ -140,7 +151,6 @@ async function upgrade(game, player, data) {
  */
 async function give(game, player, data) {
     let targetPlayer;
-
 
 
     try {
@@ -208,13 +218,13 @@ async function moveRequest(req, res) {
 
 async function attackRequest(req, res) {
     if (!req.game.doActionQueue) {
-        const result = await attack(req.game, req.player, { target_id: req.params.targetId })
+        const result = await attack(req.game, req.player, { target_id: req.params.targetId, count: req.params.count })
 
-        await logAction(req.game, req.player._id, 'attack', { target_id: req.params.targetId }, 'actionLog')
+        await logAction(req.game, req.player._id, 'attack', { target_id: req.params.targetId, killed: result.killed, count: req.params.count }, 'actionLog')
 
         res.status(result.status).send(result.message)
     } else {
-        const success = await logAction(req.game, req.player._id, 'attack', { target_id: req.params.targetId }, 'actions')
+        const success = await logAction(req.game, req.player._id, 'attack', { target_id: req.params.targetId, count: req.params.count }, 'actions')
 
         if (success) {
             res.status(200).send('ok')
@@ -277,5 +287,7 @@ module.exports = {
     moveRequest,
     attackRequest,
     upgradeRequest,
-    giveRequest
+    giveRequest,
+
+    isAdjacent
 }
