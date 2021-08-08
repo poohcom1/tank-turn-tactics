@@ -91,6 +91,7 @@
     // Fetching
     function refetch() {
         refetching = true;
+        document.body.className = 'waiting'
         return fetch(`/game/${ game._id }`, { method: "GET" })
             .then(res => res.json())
             .then(newGame => {
@@ -103,6 +104,7 @@
             })
             .finally(() => {
                 refetching = false;
+                document.body.className = ''
             })
     }
 
@@ -225,9 +227,9 @@
         }
     })
 
-    const objectDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
-    objectDriver.canvas_ctx.save();
-    objectDriver.canvas_ctx.font = 'bold 15px Uni-Sans'
+    const tankDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
+    tankDriver.canvas_ctx.save();
+    tankDriver.canvas_ctx.font = 'bold 15px Uni-Sans'
 
     let selectedTank = null;
     const ACTION_STATES = {
@@ -282,6 +284,7 @@
                         disableUpgrades()
                     }
 
+                    console.log(refetching)
                     if (userPlayer.actions <= 0 || refetching) showPlayerOption = false;
                     updateInfo()
                 }
@@ -399,27 +402,18 @@
         }
     }
 
-    const tanks = game.players.map(player => new Tank(player))
-    tanks.forEach(t => objectDriver.components.push(t))
+    tankDriver.components = game.players.map(player => new Tank(player))
 
     function updateTanks() {
-        tanks.map(tank => {
-            const player = game.players.find(player => player._id === tank.player._id);
-            if (player) {
-                tank.refetch(player)
-            } else {
-                objectDriver.components.splice(objectDriver.components.indexOf(tank), 1)
-                tanks.splice(objectDriver.components.indexOf(tank), 1)
-            }
-        })
+        tankDriver.components = game.players.map(player => new Tank(player))
     }
 
-    let userTank = objectDriver.components.find(tank => tank.player.user_id === game.user_id) // Init selected tank
+    let userTank = tankDriver.components.find(tank => tank.player.user_id === game.user_id) // Init selected tank
 
     if (!isDead) {
         selectedTank = userTank
     } else {
-        selectedTank = tanks[0]
+        selectedTank = tankDriver.components[0]
     }
 
     const guiDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
@@ -744,7 +738,7 @@
             // Mark targets
             game.players
                 .filter(player => inRange(hoveredBox.coords, player.position, userPlayer.range + GIVE_RANGE_OFFSET) && player !== userPlayer)
-                .map(player => tanks.find(t => coordsEquals(t.box.coords, player.position)))
+                .map(player => tankDriver.components.find(t => coordsEquals(t.box.coords, player.position)))
                 .forEach(tank => {
                     if (tank.box === hoveredBox) return
 
@@ -769,7 +763,7 @@
             game.players
                 .forEach(p => {
                     if (p._id === userPlayer._id) return;
-                    const tank = tanks.find(t => coordsEquals(t.box.coords, p.position));
+                    const tank = tankDriver.components.find(t => coordsEquals(t.box.coords, p.position));
                     if (tank.box === hoveredBox) return
 
                     if (inRange(tank.box.coords, hoveredBox.coords, p.range)) {
@@ -798,7 +792,7 @@
 
     // Attack & Give gui
     class TargetGui {
-        constructor(state, color, rangeOffset = 0) {
+        constructor(state, color, increaseCountCondition, rangeOffset = 0) {
             /**
              * @type {Tank[]}
              */
@@ -812,6 +806,8 @@
             this.rangeOffset = rangeOffset
             this.color = color
 
+            this.increaseCountCondition = increaseCountCondition;
+
             if (userTank)
                 this.init();
         }
@@ -819,7 +815,7 @@
         init() {
             this.targets = game.players
                 .filter(player => inRange(userTank.box.coords, player.position, userPlayer.range + this.rangeOffset) && player !== userPlayer)
-                .map(player => tanks.find(t => coordsEquals(t.box.coords, player.position)))
+                .map(player => tankDriver.components.find(t => coordsEquals(t.box.coords, player.position)))
 
             /**
              * @type {Tank}
@@ -831,6 +827,7 @@
 
         confirm() {
             console.log("Sending " + this.state)
+            refetching = true;
             selectedTank === userTank
             fetch(`/action/${ game._id }/${ this.state }/${ this.selectedTarget.player._id }/actions/${ this.count }`, { method: 'POST' })
                 .then(() => {
@@ -852,7 +849,6 @@
             this.init();
             actionState = ACTION_STATES.SELECT
             updateInfo()
-            document.body.className = ''
         }
 
         update(driver) {
@@ -862,7 +858,7 @@
             if (actionState === this.state) Driver.overrideMouse = this.hoverOnSelectedTarget;
 
             if (this.selectedTarget && this.hoverOnSelectedTarget) {
-                if (driver.mouse_events.scrollUp && this.count < userPlayer.actions && this.count < this.selectedTarget.player.health) {
+                if (driver.mouse_events.scrollUp && this.count < userPlayer.actions && this.increaseCountCondition(this.count)) {
                     this.count++;
                 } else if (driver.mouse_events.scrollDown && this.count > 1) {
                     this.count--;
@@ -896,7 +892,7 @@
     // Attack gui
     class AttackGui extends TargetGui {
         constructor() {
-            super(ACTION_STATES.ATK, c_atkMarkedTarget);
+            super(ACTION_STATES.ATK, c_atkMarkedTarget, count => count < this.selectedTarget.player.health);
         }
 
         update(driver) {
@@ -1009,7 +1005,7 @@
     // Give gui
     class GiveGui extends TargetGui {
         constructor() {
-            super(ACTION_STATES.GV, c_giveLine, GIVE_RANGE_OFFSET);
+            super(ACTION_STATES.GV, c_giveLine, count => true, GIVE_RANGE_OFFSET);
         }
 
 
@@ -1210,7 +1206,7 @@
     })
 
     backgroundDriver.run(10);
-    objectDriver.run(16);
+    tankDriver.run(16);
     guiDriver.run(16)
 
     updateInfo()
