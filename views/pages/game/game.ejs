@@ -321,10 +321,6 @@
 
             this.drawTriangle(ctx, color)
 
-            if (!this.player) {
-                refetch()
-            }
-
             // Name
             if (!(actionState !== ACTION_STATES.SELECT && this === userTank)) {
                 ctx.fillStyle = selectedTank === this ? 'white' : 'rgba(255,255,255,0.45)'
@@ -402,19 +398,23 @@
         }
     }
 
-    tankDriver.components = game.players.map(player => new Tank(player))
+    let userTank;
 
     function updateTanks() {
         tankDriver.components = game.players.map(player => new Tank(player))
+
+        userTank = tankDriver.components.find(tank => tank.player.user_id === game.user_id) // Init selected tank
+
+        if (!isDead) {
+            selectedTank = userTank
+        } else {
+            selectedTank = tankDriver.components[0]
+        }
     }
 
-    let userTank = tankDriver.components.find(tank => tank.player.user_id === game.user_id) // Init selected tank
+    updateTanks();
 
-    if (!isDead) {
-        selectedTank = userTank
-    } else {
-        selectedTank = tankDriver.components[0]
-    }
+
 
     const guiDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
 
