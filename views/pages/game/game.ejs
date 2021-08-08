@@ -268,8 +268,6 @@
             // On tank selected
             if (driver.mouse_events.pressed) {
                 if (inBounds(driver.mouse_events, this) && actionState === ACTION_STATES.SELECT && !gameOver) {
-                    if (actionPopups.some(action => action.hover)) return
-
                     // Toggle
                     showPlayerOption = !showPlayerOption
 
@@ -293,7 +291,9 @@
                 }
             }
 
-            if (driver.key_events['Escape']) showPlayerOption = false;
+            if (driver.key_pressed['Escape']) {
+                showPlayerOption = false;
+            }
         }
 
         /**
