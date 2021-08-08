@@ -268,6 +268,8 @@
             // On tank selected
             if (driver.mouse_events.pressed) {
                 if (inBounds(driver.mouse_events, this) && actionState === ACTION_STATES.SELECT && !gameOver) {
+                    if (actionPopups.some(action => action.hover)) return
+
                     // Toggle
                     showPlayerOption = !showPlayerOption
 
@@ -291,8 +293,9 @@
                 }
             }
 
-            if (driver.key_pressed['Escape']) {
+            if (driver.key_pressed['Escape'] && actionState === ACTION_STATES.SELECT) {
                 showPlayerOption = false;
+                actionPopups.forEach(action => action.hide())
             }
         }
 
@@ -446,6 +449,12 @@
             this.bounds = null;
         }
 
+        hide() {
+            this.show = false;
+            this.hover = false;
+            this.selected = false;
+        }
+
         update(driver) {
             this.show = selectedTank.player.user_id === USER_PLAYER.user_id && showPlayerOption && actionState === ACTION_STATES.SELECT;
 
@@ -558,8 +567,8 @@
 
         cancel() {
             actionState = ACTION_STATES.SELECT
-            this.init()
             actions = USER_PLAYER.actions
+            this.init()
             updateInfo()
         }
 
