@@ -89,7 +89,7 @@ async function attack(game, player, data) {
 
         // Killed
         if (targetPlayer.health <= 0) {
-            player.actions += targetPlayer.actions/2
+            player.actions += Math.floor(targetPlayer.actions/2)
             killed = true;
         }
 
@@ -182,6 +182,7 @@ async function give(game, player, data) {
  * @return {Promise<boolean>}
  */
 async function logAction(game, playerId, action, data, type) {
+    console.log(action)
     game[type].push({
         action: action,
         player_id: playerId,
@@ -263,7 +264,7 @@ async function giveRequest(req, res) {
     if (!req.game.doActionQueue) {
         const result = await give(req.game, req.player, { target_id: req.params.targetId, count: req.params.count });
 
-        await logAction(req.game, 'give', req.player._id, { target_id: req.params.targetId }, 'actionLog')
+        await logAction(req.game, req.player._id, 'give' , { target_id: req.params.targetId, count: req.params.count }, 'actionLog')
 
         res.status(result.status).send(result.message)
     } else {

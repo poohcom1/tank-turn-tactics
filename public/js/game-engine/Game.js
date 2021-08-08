@@ -69,6 +69,9 @@ class Driver {
     bg_color = "#000000";
     actively_running = false;
 
+    static overrideMouse = false;
+    static overrideKeyboard = false;
+
     constructor(ctx, parent_div, document_handle, mode = Driver.MODE_PASSIVE, bg_color = "#000000"){
         this.canvas_ctx = ctx;
         this.mode = mode;
@@ -79,7 +82,7 @@ class Driver {
         parent_div.addEventListener("mouseup", this.onMouseEvent);
         parent_div.addEventListener("mousemove", this.onMouseEvent);
         parent_div.addEventListener("mouseout", this.onMouseEvent);
-        parent_div.addEventListener("mousewheel", this.onMouseEvent);
+        parent_div.addEventListener("wheel", this.onMouseEvent);
 
         document_handle.addEventListener("keydown",  this.onKeyEvent);
         document_handle.addEventListener("keyup",  this.onKeyEvent);
@@ -105,6 +108,8 @@ class Driver {
     };
 
     onMouseEvent = (event) => {
+        if (Driver.overrideMouse) event.preventDefault()
+
         if(this.mode === Driver.MODE_PASSIVE){
             this.components.forEach((component) => {
                 component.onMouseEvent(this, event);
@@ -123,6 +128,12 @@ class Driver {
                 this.mouse_events.click = true
             } else if (event.type === "mouseup"){
                 this.mouse_events.down = false;
+            } else if (event.type === "wheel") {
+                if (event.deltaY < 0) {
+                    this.mouse_events.scrollUp = true;
+                } else if (event.deltaY > 0) {
+                    this.mouse_events.scrollDown = true;
+                }
             }
 
         }
@@ -168,6 +179,8 @@ class Driver {
 
         this.mouse_events.pressed = false;
         this.mouse_events.click = false;
+        this.mouse_events.scrollUp = false;
+        this.mouse_events.scrollDown = false;
         this.key_pressed = {};
     }
 
@@ -307,4 +320,23 @@ function angleTo(source, target) {
     const dx = target.x - source.x
 
     return Math.atan2(dy, dx)
+}
+
+function shortenName(name, length=10) {
+    if (name.length > 10) name = name.slice(0, 10) + '...'
+
+    return name;
+}
+
+function dateTimeDiff(dateNow, dateThen) {
+    const diffInMs = dateNow - dateThen
+    const diffInSeconds = (diffInMs / 1000) % 60;
+    const diffInMinutes = (diffInMs / 1000 / 60) % 60;
+    const diffInHours = (diffInMs / 1000 / 60 / 60) % 24;
+    const diffInDays = diffInMs / 1000 / 60 / 60 / 24;
+
+    const minString = diffInMinutes >= 10 ? Math.floor(diffInMinutes) : "0" + Math.floor(diffInMinutes)
+    const secString = diffInSeconds >= 10 ? Math.floor(diffInSeconds) : "0" + Math.floor(diffInSeconds)
+
+    return `${Math.floor(diffInDays)}D ${Math.floor(diffInHours)}:${minString}:${secString}`
 }

@@ -233,5 +233,5 @@ select {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: gray;
+    background: rgba(171, 171, 171, 0.5);
 }
