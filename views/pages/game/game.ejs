@@ -79,6 +79,7 @@
     // Flags
 
     let justCancelledActionsGui = false;
+    let justSelectedActionsGui = false;
 
     // Scores
     const upgradeButtons = []
@@ -122,7 +123,7 @@
             .then(newGame => {
                 initGame(newGame)
 
-                updateTanks()
+                updateTanks(false, forced)
                 updateInfo()
                 updateLogs()
                 if (forced) actionGuis.forEach(gui => gui.init())
@@ -283,10 +284,12 @@
 
         update(driver) {
             // On tank selected
-            if (driver.mouse_events.down
+            if (driver.mouse_events.pressed
                 && inBounds(driver.mouse_events, this)
                 && (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.BUTTONS)
                 && !gameOver) {
+
+                if (actionState === ACTION_STATES.BUTTONS && actionPopups.some(a => a.hover)) return;
 
                 // Enable/disable upgrades
                 if (selectedTank === userTank) {
@@ -441,12 +444,12 @@
 
     let userTank;
 
-    function updateTanks(firstTime = false) {
+    function updateTanks(firstTime = false, forced = false) {
         tankDriver.components = game.players.map(player => new Tank(player))
 
         userTank = tankDriver.components.find(tank => tank.player.user_id === game.user_id) // Init selected tank
 
-        if (firstTime) {
+        if (firstTime || forced) {
             if (!isDead) {
                 selectedTank = userTank
             } else {
@@ -454,8 +457,7 @@
             }
         }
 
-
-        selectedTank = tankDriver.components.find(t => t.box === selectedTank.box)
+        if (!forced) selectedTank = tankDriver.components.find(t => t.box === selectedTank.box)
     }
 
     updateTanks(true);
@@ -512,10 +514,10 @@
             this.hover = inBounds(driver.mouse_events, this.bounds)
             focused = this.hover || focused
 
-            if (this.hover && driver.mouse_events.down) {
+            if (this.hover && driver.mouse_events.pressed) {
                 actionState = this.state;
+                actionGuis.forEach(a => a.init())
                 driver.mouse_events.pressed = false;
-                attackGui.init()
             }
         }
 
