@@ -127,7 +127,7 @@
 
                 updateTanks(false, forced)
                 updateInfo()
-                updateLogs()
+                updateLogs(forced)
                 if (forced) actionGuis.forEach(gui => gui.init())
                 firstFetch = false;
 
@@ -1306,7 +1306,7 @@
 
     }
 
-    function updateLogs() {
+    function updateLogs(forced = true) {
         // Logs
         const logDiv = document.querySelector('#logs');
 
@@ -1359,7 +1359,7 @@
             if (message) logDiv.innerHTML += `<p class="${ divStyle }">${ message }</p>`
         })
 
-        logDiv.scrollTop = logDiv.scrollHeight;
+        if (forced) logDiv.scrollTop = logDiv.scrollHeight;
     }
 
     function updateHint(title, text, minorHint = ".", color = 'white') {
