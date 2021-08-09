@@ -2,6 +2,7 @@ const schedule = require('node-schedule');
 const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
 const actionFunctions = require('../controllers/ActionController.js')
+const { deleteGame } = require("../controllers/GameController.js");
 
 let cronString = '0 * * * *';
 
@@ -19,6 +20,17 @@ schedule.scheduleJob(cronString, async function() {
     // Distribute actions
     console.log("[app] Actions distributed! - " + new Date());
     allGames.forEach(distributeActions);
+
+    // Remove old games
+
+    for (let i = 0; i < allGames.length; i++) {
+        const game = allGames[i];
+        const players = await Player.find({ game_id: game._id })
+
+        if (players.filter(p => p.health > 0).length <= 1 && (new Date() - new Date(game.updatedAt) > (1000 * 60 * 60 * 24))) {
+            await deleteGame(game._id)
+        }
+    }
 });
 
 async function distributeActions(game) {

@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 const { getMockReq, getMockRes } = require('@jest-mock/express')
 const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
-const { createGame, startGame, deleteGame, getAllGames, getUserGamesRequest } = require('../controllers/GameController.js')
+const { createGame, startGame, deleteGameRequest, getAllGames, getUserGamesRequest } = require('../controllers/GameController.js')
 
 DBHandler.setup();
 
@@ -184,7 +184,7 @@ describe("GameController", () => {
         })
     })
 
-    describe("deleteGame", () => {
+    describe("deleteGameRequest", () => {
         it("should delete all the games players", async() => {
             const game = await new Game(testGameData).save();
             const gameId = game._id
@@ -201,7 +201,7 @@ describe("GameController", () => {
 
             const { res } = getMockRes()
 
-            await deleteGame(req, res);
+            await deleteGameRequest(req, res);
 
             const games = await Game.findById(gameId)
             const players = await Player.find({ game_id: gameId })

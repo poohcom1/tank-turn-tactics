@@ -174,8 +174,32 @@ async function getUserGames(userId) {
     const userPlayerList = await Player.find({ user_id: mongoose.Types.ObjectId(userId) })
 
     const gameList = await Promise.all(
-        userPlayerList.map( player => Game.findById(player.game_id).lean() )
+        userPlayerList.map(player => Game.findById(player.game_id).lean())
     )
+
+    for (let i = gameList.length - 1; i >= 0; i--) {
+        const game = gameList[i];
+
+        if (!game) {
+            const players = await Player.find({})
+
+            const deletedGameIds = new Set()
+
+            for (const player of players) {
+                const game = await Game.findById(player.game_id)
+
+                if (!game) {
+                    deletedGameIds.add(player.game_id)
+                }
+            }
+
+            await Player.deleteMany({
+                'game_id': { $in: Array.from(deletedGameIds)}
+            })
+
+            gameList.splice(i, 1)
+        }
+    }
 
     return await joinGamesWithPlayer(gameList)
 }
@@ -197,29 +221,39 @@ module.exports.getUserGamesRequest = async function (req, res) {
  * @return {Promise<Game[]>}
  */
 async function joinGamesWithPlayer(gameObjects) {
-     return await Promise.all(gameObjects.map(
+    return await Promise.all(gameObjects.map(
         async game => {
+
             game.players = [];
             game.players = await Player.find({ game_id: mongoose.Types.ObjectId(game._id) });
 
             return game;
+
         }
     ))
 }
 
 
-// Admin
-module.exports.deleteGame = async function (req, res) {
-    const gameId = req.params.gameId;
-
+async function deleteGame(gameId) {
     try {
         await Player.deleteMany({ game_id: gameId })
         await Game.findByIdAndDelete(gameId)
 
-        res.sendStatus(200)
+        return { status: 200, message: 'ok' }
     } catch (e) {
-        res.send(e)
+        return { status: 501, message: e }
     }
+}
+
+module.exports.deleteGame = deleteGame;
+
+// Admin
+module.exports.deleteGameRequest = async function (req, res) {
+    const gameId = req.params.gameId;
+
+    const results = deleteGame(gameId)
+
+    return res.status(results.status).send(results.message)
 }
 
 module.exports.getAllGames = async function (req, res) {
@@ -244,3 +278,4 @@ module.exports.renamePlayer = async function (req, res) {
         res.status(500).send(e)
     }
 }
+

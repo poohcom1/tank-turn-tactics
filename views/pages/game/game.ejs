@@ -66,6 +66,9 @@
 
     let reFetching = false;
 
+    // Scores
+    const upgradeButtons = []
+
     function initGame(gameToInit) {
         game = gameToInit;
         USER_PLAYER = game.players.find(player => player.user_id === game.user_id)
@@ -82,16 +85,22 @@
             document.querySelector("#winScreen p").innerHTML = game.players.find(player => player.health > 0).name + " has emerged victorious"
         }
 
+        showPlayerOption = USER_PLAYER.actions > 0;
+
         actions = USER_PLAYER.actions
-        showPlayerOption = !gameOver && USER_PLAYER.actions > 0;
+
+        if (gameOver) {
+            showPlayerOption = false;
+            if (upgradeButtons) disableUpgrades()
+        }
     }
 
     initGame(JSON.parse('<%- JSON.stringify(game) %>'));
 
     // Fetching
-    function refetch() {
-        reFetching = true;
-        document.body.className = 'waiting'
+    function refetch(forced = true) {
+        reFetching = forced;
+        if (forced) document.body.className = 'waiting'
         return fetch(`/game/${ game._id }`, { method: "GET" })
             .then(res => res.json())
             .then(newGame => {
@@ -100,7 +109,10 @@
                 updateTanks()
                 updateInfo()
                 updateLogs()
-                actionGuis.forEach(gui => gui.init())
+                if (forced) actionGuis.forEach(gui => gui.init())
+                firstFetch = false;
+
+                if (gameOver && guiDriver) guiDriver.components = []
             })
             .finally(() => {
                 reFetching = false;
@@ -113,9 +125,10 @@
 
     const GIVE_RANGE_OFFSET = 2;
 
-    // Scores
+    // Flags
+    let firstFetch = true;
+    let justCancelledActionsPopup = false;
 
-    const upgradeButtons = []
 
     // Colors
     const c_gridLabel = 'rgba(255,255,255,0.46)';
@@ -155,10 +168,6 @@
 
     let focused = false;
     let hoveredBox = { x: GRID_SIZE, y: GRID_SIZE, coords: { x: 0, y: 0 } }
-
-    if (gameOver) {
-        hoveredBox = { x: -100, y: -100, coords: { x: -1, y: -1 } }
-    }
 
     class GridBox extends Driver.PassiveComponent {
         constructor(coords, x, y, width, height, color) {
@@ -287,15 +296,25 @@
                         disableUpgrades()
                     }
 
-
                     if (USER_PLAYER.actions <= 0 || reFetching) showPlayerOption = false;
                     updateInfo()
                 }
             }
 
-            if (driver.key_pressed['Escape'] && actionState === ACTION_STATES.SELECT) {
+            if (driver.key_pressed['Escape'] && !justCancelledActionsPopup) {
                 showPlayerOption = false;
                 actionPopups.forEach(action => action.hide())
+            } else if (!driver.key_events['Escape']) {
+                justCancelledActionsPopup = true;
+            }
+
+
+            if (justCancelledActionsPopup) {
+                showPlayerOption = true;
+            }
+
+            if (USER_PLAYER.actions <= 0) {
+                showPlayerOption = false;
             }
         }
 
@@ -408,20 +427,24 @@
 
     let userTank;
 
-    function updateTanks() {
+    function updateTanks(firstTime = false) {
         tankDriver.components = game.players.map(player => new Tank(player))
 
         userTank = tankDriver.components.find(tank => tank.player.user_id === game.user_id) // Init selected tank
 
-        if (!isDead) {
-            selectedTank = userTank
-        } else {
-            selectedTank = tankDriver.components[0]
+        if (firstTime) {
+            if (!isDead) {
+                selectedTank = userTank
+            } else {
+                selectedTank = tankDriver.components[0]
+            }
         }
+
+
+        selectedTank = tankDriver.components.find(t => t.box === selectedTank.box)
     }
 
-    updateTanks();
-
+    updateTanks(true);
 
     const guiDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
 
@@ -568,8 +591,10 @@
         cancel() {
             actionState = ACTION_STATES.SELECT
             actions = USER_PLAYER.actions
+
             this.init()
             updateInfo()
+            showPlayerOption = true
         }
 
         getCurrentBox = () => this.boxes[this.boxes.length - 1]
@@ -862,6 +887,9 @@
             this.init();
             actionState = ACTION_STATES.SELECT
             updateInfo()
+
+            showPlayerOption = true
+            justCancelledActionsPopup = true;
         }
 
         update(driver) {
@@ -1141,7 +1169,7 @@
 
 
     // Selection
-    guiDriver.components.push(new class extends Driver.ActiveComponent {
+    const selectionSquare = new class extends Driver.ActiveComponent {
         constructor() {
             super();
             this.animationIndex = 0;
@@ -1226,13 +1254,15 @@
                             }
                         }
 
-                        enableUpgrades()
+                        if (!gameOver) enableUpgrades()
                     }
             }
 
             ctx.stroke()
         }
-    })
+    }
+
+    guiDriver.components.push(selectionSquare)
 
     backgroundDriver.run(10);
     tankDriver.run(16);
@@ -1435,6 +1465,12 @@
 
     statsPanel.querySelector('#actionInterval').innerHTML = "Interval Time: " + game.turnTime + " hrs";
     statsPanel.querySelector('#actionsPerInterval').innerHTML = "Actions per interval: " + game.actionsPerInterval;
+
+    setInterval(() => {
+        if (!reFetching) refetch(false);
+    }, 1000)
+
+    if (upgradeButtons && gameOver) disableUpgrades()
 </script>
 
 <%- include('../../partials/footer.html') %>
