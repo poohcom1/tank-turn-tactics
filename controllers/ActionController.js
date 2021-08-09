@@ -91,6 +91,8 @@ async function attack(game, player, data) {
         if (targetPlayer.health <= 0) {
             player.actions += Math.floor(targetPlayer.actions/2)
             killed = true;
+
+            const players = game
         }
 
         player.actions -= parseInt(data.count);

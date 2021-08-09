@@ -60,13 +60,31 @@
     let allPlayers = []
     let USER_PLAYER;
     let gameOver
-    let isDead;
     let actions
-    let showPlayerOption;
+
+    // States
+    let isDead;
 
     let reFetching = false;
 
-    function initGame(gameToInit) {
+    const ACTION_STATES = {
+        SELECT: "select",
+        BUTTONS: "buttons",
+        ATK: "attack",
+        MV: "move",
+        GV: "give"
+    }
+    let actionState = ACTION_STATES.BUTTONS;
+
+    // Flags
+
+    let justCancelledActionsGui = false;
+    let justSelectedActionsGui = false;
+
+    // Scores
+    const upgradeButtons = []
+
+    function initGame(gameToInit, firstTime = false) {
         game = gameToInit;
         USER_PLAYER = game.players.find(player => player.user_id === game.user_id)
         allPlayers = game.players
@@ -82,25 +100,38 @@
             document.querySelector("#winScreen p").innerHTML = game.players.find(player => player.health > 0).name + " has emerged victorious"
         }
 
+        if (firstTime) {
+            actionState = USER_PLAYER.actions > 0 ? ACTION_STATES.BUTTONS : ACTION_STATES.SELECT
+        }
+
         actions = USER_PLAYER.actions
-        showPlayerOption = !gameOver && USER_PLAYER.actions > 0;
+
+        if (gameOver) {
+            actionState = ACTION_STATES.SELECT
+            if (upgradeButtons) disableUpgrades()
+        }
     }
 
-    initGame(JSON.parse('<%- JSON.stringify(game) %>'));
+    initGame(JSON.parse('<%- JSON.stringify(game) %>'), true);
 
     // Fetching
-    function refetch() {
-        reFetching = true;
-        document.body.className = 'waiting'
+    function refetch(forced = true) {
+        if (forced) {
+            reFetching = true;
+        }
+        if (forced) document.body.className = 'waiting'
         return fetch(`/game/${ game._id }`, { method: "GET" })
             .then(res => res.json())
             .then(newGame => {
                 initGame(newGame)
 
-                updateTanks()
+                updateTanks(false, forced)
                 updateInfo()
                 updateLogs()
-                actionGuis.forEach(gui => gui.init())
+                if (forced) actionGuis.forEach(gui => gui.init())
+                firstFetch = false;
+
+                if (gameOver && guiDriver) guiDriver.components = []
             })
             .finally(() => {
                 reFetching = false;
@@ -113,9 +144,9 @@
 
     const GIVE_RANGE_OFFSET = 2;
 
-    // Scores
+    // Flags
+    let firstFetch = true;
 
-    const upgradeButtons = []
 
     // Colors
     const c_gridLabel = 'rgba(255,255,255,0.46)';
@@ -155,10 +186,6 @@
 
     let focused = false;
     let hoveredBox = { x: GRID_SIZE, y: GRID_SIZE, coords: { x: 0, y: 0 } }
-
-    if (gameOver) {
-        hoveredBox = { x: -100, y: -100, coords: { x: -1, y: -1 } }
-    }
 
     class GridBox extends Driver.PassiveComponent {
         constructor(coords, x, y, width, height, color) {
@@ -232,13 +259,6 @@
     tankDriver.canvas_ctx.font = 'bold 15px Uni-Sans'
 
     let selectedTank = null;
-    const ACTION_STATES = {
-        SELECT: "select",
-        ATK: "attack",
-        MV: "move",
-        GV: "give"
-    }
-    let actionState = ACTION_STATES.SELECT;
 
     class Tank extends Driver.ActiveComponent {
         constructor(player) {
@@ -266,36 +286,55 @@
 
         update(driver) {
             // On tank selected
-            if (driver.mouse_events.pressed) {
-                if (inBounds(driver.mouse_events, this) && actionState === ACTION_STATES.SELECT && !gameOver) {
-                    if (actionPopups.some(action => action.hover)) return
+            if (driver.mouse_events.pressed
+                && inBounds(driver.mouse_events, this)
+                && (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.BUTTONS)
+                && !gameOver) {
+
+                if (actionState === ACTION_STATES.BUTTONS && actionPopups.some(a => a.hover)) return;
+
+                // Enable/disable upgrades
+                if (selectedTank === userTank) {
+                    enableUpgrades()
 
                     // Toggle
-                    showPlayerOption = !showPlayerOption
-
-                    // Set true if just switched to player
-                    if (selectedTank !== userTank) {
-                        showPlayerOption = true;
-                    }
-
-                    selectedTank = this;
-
-                    // Enable/disable upgrades
-                    if (selectedTank === userTank) {
-                        enableUpgrades()
+                    if (actionState === ACTION_STATES.BUTTONS) {
+                        actionState = ACTION_STATES.SELECT
                     } else {
-                        disableUpgrades()
+                        actionState = ACTION_STATES.BUTTONS
                     }
 
+                } else {
+                    disableUpgrades()
+                }
 
-                    if (USER_PLAYER.actions <= 0 || reFetching) showPlayerOption = false;
-                    updateInfo()
+                // Set true if just switched to player
+                if (selectedTank !== userTank && this === userTank) {
+                    actionState = ACTION_STATES.BUTTONS
+                }
+
+                if (USER_PLAYER.actions <= 0 || reFetching) actionState = ACTION_STATES.SELECT
+
+                selectedTank = this;
+
+                updateInfo()
+
+                driver.mouse_events.down = false
+            }
+
+
+            if (driver.key_pressed['Escape'] && this === userTank) {
+                console.log(justCancelledActionsGui)
+                if (justCancelledActionsGui) {
+                    justCancelledActionsGui = false
+                } else if (actionState === ACTION_STATES.BUTTONS) {
+                    actionState = ACTION_STATES.SELECT
                 }
             }
 
-            if (driver.key_pressed['Escape'] && actionState === ACTION_STATES.SELECT) {
-                showPlayerOption = false;
-                actionPopups.forEach(action => action.hide())
+
+            if (USER_PLAYER.actions <= 0) {
+                actionState = ACTION_STATES.SELECT
             }
         }
 
@@ -329,17 +368,16 @@
 
             this.drawTriangle(ctx, color)
 
-            // Name
-            if (!(actionState !== ACTION_STATES.SELECT && this === userTank)) {
-                ctx.fillStyle = selectedTank === this ? 'white' : 'rgba(255,255,255,0.45)'
-                ctx.textAlign = 'center'
-                ctx.fillText(this.player.name, this.x + this.width / 2, this.y + this.height + 12)
-                ctx.fillText(this.player.health, this.x + this.width / 2, this.y - 10)
-            }
+            // Render name
+
+            ctx.fillStyle = selectedTank === this ? 'white' : 'rgba(255,255,255,0.45)'
+            ctx.textAlign = 'center'
+            ctx.fillText(this.player.name, this.x + this.width / 2, this.y + this.height + 12)
+            ctx.fillText(this.player.health, this.x + this.width / 2, this.y - 10)
 
             if (gameOver) return;
 
-            if (selectedTank === this && actionState === ACTION_STATES.SELECT) {
+            if (selectedTank === this && (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.BUTTONS)) {
                 ctx.shadowColor = 'white'
                 ctx.shadowBlur = 10;
 
@@ -366,7 +404,7 @@
                     center = hoveredBox
                 }
 
-                if (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.MV || actionState === ACTION_STATES.ATK) {
+                if (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.BUTTONS || actionState === ACTION_STATES.MV || actionState === ACTION_STATES.ATK) {
 
                     ctx.beginPath()
                     ctx.arc(center.x + this.width / 2, center.y + this.height / 2, this.player.range * this.width + this.width / 2, 0, 2 * Math.PI)
@@ -394,7 +432,7 @@
 
                 }
 
-                if (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.GV) {
+                if (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.BUTTONS || actionState === ACTION_STATES.GV) {
                     // Give range
                     ctx.beginPath()
                     ctx.arc(center.x + this.width / 2, center.y + this.height / 2, (this.player.range + GIVE_RANGE_OFFSET) * this.width + this.width / 2, 0, 2 * Math.PI)
@@ -408,20 +446,23 @@
 
     let userTank;
 
-    function updateTanks() {
+    function updateTanks(firstTime = false, forced = false) {
         tankDriver.components = game.players.map(player => new Tank(player))
 
         userTank = tankDriver.components.find(tank => tank.player.user_id === game.user_id) // Init selected tank
 
-        if (!isDead) {
-            selectedTank = userTank
-        } else {
-            selectedTank = tankDriver.components[0]
+        if (firstTime || forced) {
+            if (!isDead) {
+                selectedTank = userTank
+            } else {
+                selectedTank = tankDriver.components[0]
+            }
         }
+
+        if (!forced) selectedTank = tankDriver.components.find(t => t.box === selectedTank.box)
     }
 
-    updateTanks();
-
+    updateTanks(true);
 
     const guiDriver = initDriver(parentDiv, Driver.MODE_ACTIVE, gameDim)
 
@@ -456,7 +497,7 @@
         }
 
         update(driver) {
-            this.show = selectedTank.player.user_id === USER_PLAYER.user_id && showPlayerOption && actionState === ACTION_STATES.SELECT;
+            this.show = selectedTank.player.user_id === USER_PLAYER.user_id && actionState === ACTION_STATES.BUTTONS;
 
             if (!this.show) return;
 
@@ -477,8 +518,8 @@
 
             if (this.hover && driver.mouse_events.pressed) {
                 actionState = this.state;
+                actionGuis.forEach(a => a.init())
                 driver.mouse_events.pressed = false;
-                attackGui.init()
             }
         }
 
@@ -538,7 +579,7 @@
 
         confirmMove() {
             if (this.confirming) return;
-            actionState = ACTION_STATES.SELECT
+            actionState = ACTION_STATES.BUTTONS
 
             // Remove first position (which is the player's current position)
             const positions = this.boxes.slice(1, this.boxes.length).map(box => box.coords)
@@ -562,14 +603,17 @@
                     refetch()
                     this.init()
                     this.confirming = false;
+                    actionState = ACTION_STATES.BUTTONS
                 })
         }
 
         cancel() {
-            actionState = ACTION_STATES.SELECT
             actions = USER_PLAYER.actions
+
             this.init()
             updateInfo()
+            actionState = ACTION_STATES.BUTTONS
+            justCancelledActionsGui = true;
         }
 
         getCurrentBox = () => this.boxes[this.boxes.length - 1]
@@ -852,6 +896,7 @@
                 .finally(() => {
                     refetch()
                     this.cancel()
+
                 })
         }
 
@@ -860,14 +905,13 @@
             Driver.overrideMouse = false;
 
             this.init();
-            actionState = ACTION_STATES.SELECT
             updateInfo()
+
+            actionState = ACTION_STATES.BUTTONS
+            justCancelledActionsGui = true;
         }
 
         update(driver) {
-            if (!showPlayerOption) {
-                actionState = ACTION_STATES.SELECT
-            }
             if (actionState === this.actionState) Driver.overrideMouse = this.hoverOnSelectedTarget;
 
             if (this.selectedTarget && this.hoverOnSelectedTarget) {
@@ -910,7 +954,7 @@
 
         update(driver) {
             super.update(driver)
-            if (actionState !== this.actionState || !showPlayerOption || !USER_PLAYER) return;
+            if (actionState !== this.actionState || !USER_PLAYER) return;
             if (this.confirming) {
                 updateHint("Attack", "Engaging...", ".", c_atkMarkedTarget)
                 return
@@ -1141,7 +1185,7 @@
 
 
     // Selection
-    guiDriver.components.push(new class extends Driver.ActiveComponent {
+    const selectionSquare = new class extends Driver.ActiveComponent {
         constructor() {
             super();
             this.animationIndex = 0;
@@ -1222,17 +1266,19 @@
                                 updateHint("Control", "Click to toggle controls")
                             } else {
                                 updateHint("Control", "Out of energy!", '.', 'red')
-                                showPlayerOption = false;
+                                actionState = ACTION_STATES.SELECT
                             }
                         }
 
-                        enableUpgrades()
+                        if (!gameOver) enableUpgrades()
                     }
             }
 
             ctx.stroke()
         }
-    })
+    }
+
+    guiDriver.components.push(selectionSquare)
 
     backgroundDriver.run(10);
     tankDriver.run(16);
@@ -1435,6 +1481,12 @@
 
     statsPanel.querySelector('#actionInterval').innerHTML = "Interval Time: " + game.turnTime + " hrs";
     statsPanel.querySelector('#actionsPerInterval').innerHTML = "Actions per interval: " + game.actionsPerInterval;
+
+    setInterval(() => {
+        if (!reFetching) refetch(false);
+    }, 1000)
+
+    if (upgradeButtons && gameOver) disableUpgrades()
 </script>
 
 <%- include('../../partials/footer.html') %>

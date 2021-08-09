@@ -9,12 +9,14 @@ class Driver {
         /**
          * @param {Driver} driver
          */
-        update(driver) {};
+        update(driver) {
+        };
 
         /**
          * @param {Driver} driver
          */
-        redraw(driver) {}
+        redraw(driver) {
+        }
     }
 
     static PassiveComponent = class {
@@ -22,18 +24,21 @@ class Driver {
          * @param {Driver} driver
          * @param {MouseEvent} e
          */
-        onMouseEvent(driver, e) {};
+        onMouseEvent(driver, e) {
+        };
 
         /**
          * @param {Driver} driver
          * @param {KeyboardEvent} e
          */
-        onKeyEvent(driver, e) {};
+        onKeyEvent(driver, e) {
+        };
 
         /**
          * @param {Driver} driver
          */
-        redraw(driver) {};
+        redraw(driver) {
+        };
     }
 
     //internal variables ---------------------
@@ -72,7 +77,9 @@ class Driver {
     static overrideMouse = false;
     static overrideKeyboard = false;
 
-    constructor(ctx, parent_div, document_handle, mode = Driver.MODE_PASSIVE, bg_color = "#000000"){
+    mouseEventConsumed = false;
+
+    constructor(ctx, parent_div, document_handle, mode = Driver.MODE_PASSIVE, bg_color = "#000000") {
         this.canvas_ctx = ctx;
         this.mode = mode;
         this.bg_color = bg_color;
@@ -84,8 +91,8 @@ class Driver {
         parent_div.addEventListener("mouseout", this.onMouseEvent);
         parent_div.addEventListener("wheel", this.onMouseEvent);
 
-        document_handle.addEventListener("keydown",  this.onKeyEvent);
-        document_handle.addEventListener("keyup",  this.onKeyEvent);
+        document_handle.addEventListener("keydown", this.onKeyEvent);
+        document_handle.addEventListener("keyup", this.onKeyEvent);
     }
 
     imagePreload = (images_uri_list) => {
@@ -109,8 +116,9 @@ class Driver {
 
     onMouseEvent = (event) => {
         if (Driver.overrideMouse) event.preventDefault()
+        this.mouseEventConsumed = false;
 
-        if(this.mode === Driver.MODE_PASSIVE){
+        if (this.mode === Driver.MODE_PASSIVE) {
             this.components.forEach((component) => {
                 component.onMouseEvent(this, event);
             })
@@ -118,7 +126,7 @@ class Driver {
         } else {
             this.mouse_events.pressed = false;
 
-            if(event.type === "mousemove"){
+            if (event.type === "mousemove") {
                 this.mouse_events.x = event.offsetX;
                 this.mouse_events.y = event.offsetY;
             } else if (event.type === "mousedown") {
@@ -126,7 +134,7 @@ class Driver {
                 this.mouse_events.pressed = true
             } else if (event.type === "click") {
                 this.mouse_events.click = true
-            } else if (event.type === "mouseup"){
+            } else if (event.type === "mouseup") {
                 this.mouse_events.down = false;
             } else if (event.type === "wheel") {
                 if (event.deltaY < 0) {
@@ -140,16 +148,16 @@ class Driver {
     };
 
     onKeyEvent = (event) => {
-        if(this.mode === Driver.MODE_PASSIVE){
+        if (this.mode === Driver.MODE_PASSIVE) {
             this.components.forEach((component) => {
                 component.onKeyEvent(this, event);
             })
             this.redraw();
         } else {
-            if(event.type === "keydown"){
+            if (event.type === "keydown") {
                 this.key_events[event.code] = true;
                 this.key_pressed[event.code] = true;
-            }else if (event.type === "keyup"){
+            } else if (event.type === "keyup") {
                 this.key_events[event.code] = false;
             }
         }
@@ -158,10 +166,10 @@ class Driver {
     };
 
     redraw = () => {
-        if(this.bg_color != Driver.TRANSPARENT){
+        if (this.bg_color != Driver.TRANSPARENT) {
             this.canvas_ctx.fillStyle = this.bg_color;
             this.canvas_ctx.fillRect(0, 0, this.canvas_ctx.canvas.width, this.canvas_ctx.canvas.height);
-        }else{
+        } else {
             this.canvas_ctx.clearRect(0, 0, this.canvas_ctx.canvas.width, this.canvas_ctx.canvas.height);
         }
 
@@ -171,21 +179,25 @@ class Driver {
     };
 
     update = () => {
+        this.mouseEventConsumed = true;
         this.components.forEach((component) => {
             component.update(this);
         })
 
         this.redraw();
 
-        this.mouse_events.pressed = false;
-        this.mouse_events.click = false;
-        this.mouse_events.scrollUp = false;
-        this.mouse_events.scrollDown = false;
+        if (this.mouseEventConsumed) {
+            this.mouse_events.pressed = false;
+            this.mouse_events.click = false;
+            this.mouse_events.scrollUp = false;
+            this.mouse_events.scrollDown = false;
+        }
         this.key_pressed = {};
+
     }
 
     run = (frame_interval = 16) => {
-        if(this.mode === Driver.MODE_ACTIVE && !this.actively_running){
+        if (this.mode === Driver.MODE_ACTIVE && !this.actively_running) {
             this.update();
             this.run_loop_obj = setInterval(this.update, frame_interval);
             this.actively_running = true;
@@ -195,7 +207,7 @@ class Driver {
     }
 
     stop = () => {
-        if(this.mode === Driver.MODE_ACTIVE && this.actively_running){
+        if (this.mode === Driver.MODE_ACTIVE && this.actively_running) {
             clearInterval(this.run_loop_obj);
             this.actively_running = false;
         }
@@ -216,7 +228,7 @@ class Driver {
  * @param {string|null} background
  * @param {number|null} index
  */
-function initDriver(div, mode, dimensions, background = Driver.TRANSPARENT, index=null) {
+function initDriver(div, mode, dimensions, background = Driver.TRANSPARENT, index = null) {
     if (!index) {
         if (initDriver.zIndex) {
             index = initDriver.zIndex++;
@@ -263,7 +275,7 @@ function inRange(pos, target, range) {
 }
 
 function center(bounds) {
-    return { x: bounds.x + bounds.width/2, y: bounds.y + bounds.height/2}
+    return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
 }
 
 function parallelCoords(pos1, pos2) {
@@ -272,9 +284,9 @@ function parallelCoords(pos1, pos2) {
 
 function connectCoords(pos1, pos2) {
     if (Math.abs(pos1.x - pos2.x) > Math.abs(pos1.y - pos2.y)) {
-        return { x: pos2.x , y: pos1.y }
+        return { x: pos2.x, y: pos1.y }
     } else {
-        return { x: pos1.x , y: pos2.y }
+        return { x: pos1.x, y: pos2.y }
     }
 }
 
@@ -312,7 +324,7 @@ function getChar(num) {
 }
 
 function vecToPoint(distance, angle) {
-    return { x: distance * Math.cos(angle), y: distance * Math.sin(angle)}
+    return { x: distance * Math.cos(angle), y: distance * Math.sin(angle) }
 }
 
 function angleTo(source, target) {
@@ -322,7 +334,7 @@ function angleTo(source, target) {
     return Math.atan2(dy, dx)
 }
 
-function shortenName(name, length=10) {
+function shortenName(name, length = 10) {
     if (name.length > 10) name = name.slice(0, 10) + '...'
 
     return name;
@@ -338,5 +350,5 @@ function dateTimeDiff(dateNow, dateThen) {
     const minString = diffInMinutes >= 10 ? Math.floor(diffInMinutes) : "0" + Math.floor(diffInMinutes)
     const secString = diffInSeconds >= 10 ? Math.floor(diffInSeconds) : "0" + Math.floor(diffInSeconds)
 
-    return `${Math.floor(diffInDays)}D ${Math.floor(diffInHours)}:${minString}:${secString}`
+    return `${ Math.floor(diffInDays) }D ${ Math.floor(diffInHours) }:${ minString }:${ secString }`
 }
