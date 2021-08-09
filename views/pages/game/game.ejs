@@ -116,7 +116,9 @@
 
     // Fetching
     function refetch(forced = true) {
-        reFetching = forced;
+        if (forced) {
+            reFetching = true;
+        }
         if (forced) document.body.className = 'waiting'
         return fetch(`/game/${ game._id }`, { method: "GET" })
             .then(res => res.json())
