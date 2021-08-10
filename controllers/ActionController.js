@@ -3,8 +3,6 @@ const { checkRange, checkGrid } = require('../libs/game_utils.js')
 // All routes to game will have req.game and req.player
 const Player = require("../models/PlayerModel.js");
 
-const GIVE_RANGE_INCREASE = 2;
-
 function isAdjacent(pos1, pos2) {
     return (Math.abs(pos1.x - pos2.x) === 1 || Math.abs(pos1.y - pos2.y) === 1)
         && !(Math.abs(pos1.x - pos2.x) === 1 && Math.abs(pos1.y - pos2.y) === 1) // XOR
@@ -89,7 +87,7 @@ async function attack(game, player, data) {
 
         // Killed
         if (targetPlayer.health <= 0) {
-            player.actions += Math.floor(targetPlayer.actions/2)
+            player.actions += targetPlayer.actions
             killed = true;
 
             const players = game
@@ -158,8 +156,10 @@ async function give(game, player, data) {
     try {
         targetPlayer = await Player.findById(data.target_id);
 
-        if (!checkRange(player.position, targetPlayer.position, player.range + GIVE_RANGE_INCREASE)) {
-            return { status: 500, message: 'Out of range' };
+        if (game.giveRangeOffset && game.giveRangeOffset >= 0) {
+            if (!checkRange(player.position, targetPlayer.position, player.range + game.giveRangeOffset)) {
+                return { status: 500, message: 'Out of range' };
+            }
         }
 
         player.actions -= parseInt(data.count);
@@ -257,7 +257,7 @@ async function upgradeRequest(req, res) {
         if (success) {
             res.status(200).send('ok')
         } else {
-            res.status(500).send(e)
+            res.status(500).send()
         }
     }
 }

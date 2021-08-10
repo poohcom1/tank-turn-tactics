@@ -334,8 +334,8 @@ function angleTo(source, target) {
     return Math.atan2(dy, dx)
 }
 
-function shortenName(name, length = 10) {
-    if (name.length > 10) name = name.slice(0, 10) + '...'
+function shortenName(name, length = 15) {
+    if (name.length > length) name = name.slice(0, length) + '...'
 
     return name;
 }

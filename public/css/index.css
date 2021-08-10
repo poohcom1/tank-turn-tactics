@@ -221,6 +221,11 @@ select {
     margin: 25px;
 }
 
+.card {
+    background-color: rgba(0, 0, 0, 0.56);
+    box-shadow: 0 0 5px 25px rgba(0, 0, 0, 0.56);
+}
+
 /* Scrollbar */
 
 ::-webkit-scrollbar {

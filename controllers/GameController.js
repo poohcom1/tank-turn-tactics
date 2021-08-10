@@ -11,7 +11,7 @@ const mongoose = require("mongoose");
  * @param res
  * @return {Promise<Document<any, any, unknown>>}
  */
-module.exports.createGame = async (req, res) => {
+module.exports.createGameRequest = async (req, res) => {
     const gameCfg = { ...req.body };
 
     // Append user id
@@ -51,7 +51,7 @@ module.exports.createGame = async (req, res) => {
  * @param req POST form
  * @param res
  */
-module.exports.joinGame = async function (req, res) {
+module.exports.joinGameRequest = async function (req, res) {
     if (!req.user) res.status(403).send()
 
     const responseJson = req.body;
@@ -96,7 +96,21 @@ module.exports.joinGame = async function (req, res) {
     }
 }
 
-// GET routes with params
+// GET routes with
+
+async function getGame(gameId, userId) {
+    const game = await Game.findById(gameId).lean();
+    game.players = await Player.find({ game_id: game._id }).lean();
+    game.players.forEach(p => {
+        if (!p.user_id.equals(userId)) {
+            p.actions = 2;
+        }
+    })
+    game.user_id = userId;
+
+    return game;
+}
+
 
 /**
  * Takes a gameId as a GET param and sends a game object with a list of player ids attached.
@@ -104,13 +118,11 @@ module.exports.joinGame = async function (req, res) {
  * @param {number} req.params.gameId Game ID
  * @param res
  */
-module.exports.getGame = async function (req, res) {
+module.exports.getGameRequest = async function (req, res) {
     const gameId = req.params.gameId
 
     try {
-        const game = await Game.findById(gameId).lean();
-        game.players = await Player.find({ game_id: game._id });
-        game.user_id = req.user.id;
+        const game = await getGame(gameId, req.user.id)
 
         res.json(game)
     } catch (e) {
@@ -125,7 +137,7 @@ module.exports.getGame = async function (req, res) {
  * @param {number} req.params.gameId Game ID
  * @param res
  */
-module.exports.startGame = async function (req, res) {
+module.exports.startGameRequest = async function (req, res) {
     const gameId = req.params.gameId
 
     // Fetch game and its players
@@ -149,7 +161,7 @@ module.exports.startGame = async function (req, res) {
     res.redirect("/play?game=" + gameId)
 }
 
-module.exports.getPlayer = async function (req, res) {
+module.exports.getPlayerRequest = async function (req, res) {
     const gameId = req.params.gameId
 
     const player = await Player.find({ user_id: req.user.id, game_id: gameId })
@@ -256,13 +268,13 @@ module.exports.deleteGameRequest = async function (req, res) {
     return res.status(results.status).send(results.message)
 }
 
-module.exports.getAllGames = async function (req, res) {
+module.exports.getAllGamesRequest = async function (req, res) {
     const gameList = await Game.find().lean()
 
     res.json(await joinGamesWithPlayer(gameList))
 }
 
-module.exports.renamePlayer = async function (req, res) {
+module.exports.renamePlayerRequest = async function (req, res) {
     try {
         const name = req.params.name
 
@@ -279,3 +291,6 @@ module.exports.renamePlayer = async function (req, res) {
     }
 }
 
+module.exports.editGameRequest = async function (req, res) {
+
+}

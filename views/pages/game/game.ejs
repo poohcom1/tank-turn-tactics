@@ -34,12 +34,20 @@
     <div class="upgrade" data-upgrade="health" data-cost=2>
         <span id="health"></span>
         <span class="actionsToAdd"></span>
-        <span><a class="minus">-</a><a class="plus">+</a></span>
+        <span>
+            <a class="minus">-</a>
+            <a class="plus">+</a>
+            <span>[2]</span>
+        </span>
     </div>
     <div class="upgrade" data-upgrade="range" data-cost=1>
         <span id="range"></span>
         <span class="actionsToAdd"></span>
-        <span><a class="minus">-</a><a class="plus">+</a></span>
+        <span>
+            <a class="minus">-</a>
+            <a class="plus">+</a>
+            <span>[1]</span>
+        </span>
     </div>
 
     <span class="confirm"><a class="cancel">✘</a><a class="confirm">✓</a></span>
@@ -60,7 +68,7 @@
     let allPlayers = []
     let USER_PLAYER;
     let gameOver
-    let actions
+    let deltaActions = 0
 
     // States
     let isDead;
@@ -104,8 +112,6 @@
             actionState = USER_PLAYER.actions > 0 ? ACTION_STATES.BUTTONS : ACTION_STATES.SELECT
         }
 
-        actions = USER_PLAYER.actions
-
         if (gameOver) {
             actionState = ACTION_STATES.SELECT
             if (upgradeButtons) disableUpgrades()
@@ -118,6 +124,7 @@
     function refetch(forced = true) {
         if (forced) {
             reFetching = true;
+            deltaActions = 0
         }
         if (forced) document.body.className = 'waiting'
         return fetch(`/game/${ game._id }`, { method: "GET" })
@@ -128,7 +135,9 @@
                 updateTanks(false, forced)
                 updateInfo()
                 updateLogs(forced)
-                if (forced) actionGuis.forEach(gui => gui.init())
+                if (forced) {
+                    actionGuis.forEach(gui => gui.init())
+                }
                 firstFetch = false;
 
                 if (gameOver && guiDriver) guiDriver.components = []
@@ -141,8 +150,6 @@
 
     const size = game.size
     const GRID_SIZE = 50;
-
-    const GIVE_RANGE_OFFSET = 2;
 
     // Flags
     let firstFetch = true;
@@ -174,7 +181,7 @@
     const parentDiv = document.querySelector('#gameContainer')
     const gridPadding = GRID_SIZE * 2;
     const footerPadding = 150;
-    const rightPadding = 150;
+    const rightPadding = 250;
     const gameDim = {
         width: size.width * GRID_SIZE + gridPadding + rightPadding,
         height: size.height * GRID_SIZE + gridPadding + footerPadding
@@ -434,11 +441,13 @@
 
                 if (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.BUTTONS || actionState === ACTION_STATES.GV) {
                     // Give range
-                    ctx.beginPath()
-                    ctx.arc(center.x + this.width / 2, center.y + this.height / 2, (this.player.range + GIVE_RANGE_OFFSET) * this.width + this.width / 2, 0, 2 * Math.PI)
-                    ctx.strokeStyle = "rgba(88,255,81,0.16)"
-                    ctx.setLineDash([ 5, 2 ])
-                    ctx.stroke()
+                    if (game.giveRangeOffset && game.giveRangeOffset >= 0) {
+                        ctx.beginPath()
+                        ctx.arc(center.x + this.width / 2, center.y + this.height / 2, (this.player.range + game.giveRangeOffset) * this.width + this.width / 2, 0, 2 * Math.PI)
+                        ctx.strokeStyle = "rgba(88,255,81,0.16)"
+                        ctx.setLineDash([ 5, 2 ])
+                        ctx.stroke()
+                    }
                 }
             }
         }
@@ -454,12 +463,12 @@
         if (firstTime || forced) {
             if (!isDead) {
                 selectedTank = userTank
-            } else {
-                selectedTank = tankDriver.components[0]
             }
         }
 
         if (!forced) selectedTank = tankDriver.components.find(t => t.box === selectedTank.box)
+
+        if (!selectedTank) selectedTank = tankDriver.components[0]
     }
 
     updateTanks(true);
@@ -608,7 +617,7 @@
         }
 
         cancel() {
-            actions = USER_PLAYER.actions
+            deltaActions = 0
 
             this.init()
             updateInfo()
@@ -793,16 +802,23 @@
             const arrowHeadLength = 10
 
             // Mark targets
-            game.players
-                .filter(player => inRange(hoveredBox.coords, player.position, USER_PLAYER.range + GIVE_RANGE_OFFSET) && player !== USER_PLAYER)
-                .map(player => tankDriver.components.find(t => coordsEquals(t.box.coords, player.position)))
-                .forEach(tank => {
+            const playerToMarks = game.players;
+
+            if (game.giveRangeOffset && game.giveRangeOffset >= 0) {
+                playerToMarks.filter(player => inRange(hoveredBox.coords, player.position, USER_PLAYER.range + game.giveRangeOffset))
+            }
+
+            const tanks = playerToMarks.filter(p => p !== USER_PLAYER).map(player => tankDriver.components.find(t => coordsEquals(t.box.coords, player.position)))
+
+            tanks.forEach(tank => {
                     if (tank.box === hoveredBox) return
 
                     if (inRange(hoveredBox.coords, tank.box.coords, USER_PLAYER.range)) {
                         ctx.strokeStyle = c_atkRange
-                    } else {
+                    } else if (game.giveRangeOffset && inRange(hoveredBox.coords, tank.box.coords, USER_PLAYER.range + game.giveRangeOffset)) {
                         ctx.strokeStyle = c_giveRange
+                    } else {
+                        return;
                     }
 
                     const angle = angleTo(hoveredBox, tank.box)
@@ -825,7 +841,7 @@
 
                     if (inRange(tank.box.coords, hoveredBox.coords, p.range)) {
                         ctx.strokeStyle = c_atkRange
-                    } else if (inRange(tank.box.coords, hoveredBox.coords, p.range + GIVE_RANGE_OFFSET)) {
+                    } else if (game.giveRangeOffset && inRange(tank.box.coords, hoveredBox.coords, p.range + game.giveRangeOffset)) {
                         ctx.strokeStyle = c_giveRange
                     } else {
                         return
@@ -842,7 +858,7 @@
                     ctx.stroke();
                 })
 
-            actions = USER_PLAYER.actions - path.length + 1
+            deltaActions = path.length - 1
             updateInfo()
         }
     }
@@ -870,9 +886,14 @@
         }
 
         init() {
-            this.targets = game.players
-                .filter(player => inRange(userTank.box.coords, player.position, USER_PLAYER.range + this.rangeOffset) && player !== USER_PLAYER)
-                .map(player => tankDriver.components.find(t => coordsEquals(t.box.coords, player.position)))
+            let playersToMark = game.players
+
+            if (this.rangeOffset >= 0) {
+                playersToMark = playersToMark.filter(player => inRange(userTank.box.coords, player.position, USER_PLAYER.range + this.rangeOffset))
+            }
+
+            this.targets = playersToMark.filter(p => p !== USER_PLAYER).map(player => tankDriver.components.find(t => coordsEquals(t.box.coords, player.position)))
+
 
             /**
              * @type {Tank}
@@ -962,7 +983,7 @@
 
             updateInfo()
 
-            actions = USER_PLAYER.actions
+            deltaActions = 0
 
             if (driver.key_pressed["Escape"]) this.cancel()
 
@@ -994,7 +1015,7 @@
                 if (this.selectedTarget === hoverTarget) {
                     updateHint("Attack", "Click to commence attack on " + this.selectedTarget.player.name + ". Scroll to adjust power", "Press escape to cancel", c_atkMarkedTarget)
                     this.hoverOnSelectedTarget = true;
-                    actions = USER_PLAYER.actions - this.count
+                    deltaActions = this.count
                     updateInfo()
                     attackState = ATTACK.ATTACK
                 } else {
@@ -1071,7 +1092,7 @@
     // Give gui
     class GiveGui extends TargetGui {
         constructor() {
-            super(ACTION_STATES.GV, c_giveLine, () => true, GIVE_RANGE_OFFSET);
+            super(ACTION_STATES.GV, c_giveLine, () => true, game.giveRangeOffset);
         }
 
 
@@ -1085,7 +1106,7 @@
 
             updateInfo()
 
-            actions = USER_PLAYER.actions
+            deltaActions = 0
 
             if (driver.key_pressed["Escape"]) this.cancel()
 
@@ -1115,7 +1136,7 @@
                 if (this.selectedTarget === hoverTarget) {
                     updateHint("Support", "Click to send energy points. Scroll to adjust amount", "Press escape to cancel", c_giveLine)
                     this.hoverOnSelectedTarget = true;
-                    actions = USER_PLAYER.actions - this.count
+                    deltaActions = this.count
                     updateInfo()
                     supportState = SUPPORT.ATTACK
                 } else {
@@ -1292,9 +1313,13 @@
         const player = selectedTank.player;
         const isUser = userTank === selectedTank
 
-        document.querySelector('#name').innerHTML = player.name
+        document.querySelector('#name').innerHTML = shortenName(player.name)
         document.querySelector('#id').innerHTML = ` &lt${ getChar(player.position.x) }${ player.position.y + 1 }&gt ${ player._id }`
-        document.querySelector('#actions').innerHTML = "Energy: " + player.actions + (isUser && actions !== player.actions ? ` → ${ actions }` : '')
+        if (isUser) {
+            document.querySelector('#actions').innerHTML = "Energy: " + player.actions + (deltaActions > 0 ? ` - ${ deltaActions }` : '')
+        } else {
+            document.querySelector('#actions').innerHTML = "Energy: ?"
+        }
         if (player.actions === 0) {
             document.querySelector('#actions').style.color = 'red'
         } else {
@@ -1303,7 +1328,6 @@
 
         document.querySelector('#health').innerHTML = "Health: " + player.health
         document.querySelector('#range').innerHTML = "Range: " + player.range
-
     }
 
     function updateLogs(forced = true) {
@@ -1332,26 +1356,31 @@
 
             const playerStyle = player._id === USER_PLAYER._id ? 'userPlayerName' : 'playerName'
 
-            let targetStyle;
-            if (target)
-                targetStyle = target._id === USER_PLAYER._id ? 'userPlayerName' : 'playerName'
+            const playerName = shortenName(player.name)
+            let targetName;
 
+            let targetStyle;
+            if (target) {
+                targetStyle = target._id === USER_PLAYER._id ? 'userPlayerName' : 'playerName'
+                targetName = shortenName(target.name)
+            }
             const divStyle = player._id === USER_PLAYER._id || (target && target._id === USER_PLAYER._id) ? 'playerActionLog' : ''
+
 
             switch (action.action) {
                 case 'move':
                     const finalPosition = action.positions[action.positions.length - 1]
-                    message += `<span class="${ playerStyle }">${ shortenName(player.name) }</span> ➟ <span class="location">${ getChar(finalPosition.x) }${ finalPosition.y + 1 }</span>`
+                    message += `<span class="${ playerStyle }">${ playerName }</span> ➟ <span class="location">${ getChar(finalPosition.x) }${ finalPosition.y + 1 }</span>`
                     break;
                 case 'attack':
                     const symbol = action.killed ? '💀' : '⚔'
                     if (target._id === USER_PLAYER._id && action.killed) {
                         statsPanel.querySelector('#deathMessage').innerHTML = `You were killed by ${ player.name }`
                     }
-                    message += `<span class="${ playerStyle }">${ shortenName(player.name) }</span> ${ symbol } <span class="${ targetStyle }">${ shortenName(target.name) }</span>`
+                    message += `<span class="${ playerStyle }">${ playerName }</span> ${ symbol } <span class="${ targetStyle }">${ targetName }</span>`
                     break;
                 case 'give':
-                    message += `<span class="${ playerStyle }">${ shortenName(player.name) }</span> 🔰 <span class="${ targetStyle }">${ shortenName(target.name) }</span>`
+                    message += `<span class="${ playerStyle }">${ playerName }</span> 🔰 <span class="${ targetStyle }">${ targetName }</span>`
                     break;
                 default:
                     message = '';
@@ -1403,15 +1432,15 @@
 
         node.querySelector("a.plus").onclick = () => {
             if (node.querySelector("a.plus").classList.contains("disabled")) return;
-
-            if (actions - actionCost < 0) return;
+            console.log(selectedTank.player.actions, deltaActions)
+            if (selectedTank && deltaActions >= selectedTank.player.actions) return;
 
             if (actionsToAdd[upgradeName]) {
                 actionsToAdd[upgradeName] += 1;
-                actions -= actionCost
+                deltaActions += actionCost
             } else {
                 actionsToAdd[upgradeName] = 1;
-                actions -= actionCost
+                deltaActions = actionCost
             }
 
             node.querySelector(".actionsToAdd").innerHTML = actionsToAdd[upgradeName] > 0 ? `+${ actionsToAdd[upgradeName] }` : ''
@@ -1424,10 +1453,11 @@
             if (actionsToAdd[upgradeName] !== undefined) {
                 if (actionsToAdd[upgradeName] > 0) {
                     actionsToAdd[upgradeName] -= 1;
-                    actions += actionCost
+                    deltaActions -= actionCost
                 }
             } else {
                 actionsToAdd[upgradeName] = 0;
+
             }
 
             node.querySelector(".actionsToAdd").innerHTML = actionsToAdd[upgradeName] > 0 ? `+${ actionsToAdd[upgradeName] }` : ''
@@ -1438,7 +1468,7 @@
     document.querySelector("#infoPanel .cancel").onclick = () => {
         if (document.querySelector("a.cancel").classList.contains("disabled")) return;
         Object.keys(actionsToAdd).forEach(k => {
-            actions += actionsToAdd[k]
+            deltaActions -= actionsToAdd[k]
             actionsToAdd[k] = 0
         })
 
@@ -1471,12 +1501,12 @@
 
     statsPanel.querySelector('#gameName').innerHTML = game.name;
     if (!gameOver) {
-        statsPanel.querySelector('#gameTime').innerHTML = dateTimeDiff(new Date(), new Date(game.createdAt))
+        statsPanel.querySelector('#gameTime').innerHTML = dateTimeDiff(new Date(), new Date(game.startedAt))
         setInterval(() => {
-            statsPanel.querySelector('#gameTime').innerHTML = dateTimeDiff(new Date(), new Date(game.createdAt))
+            statsPanel.querySelector('#gameTime').innerHTML = dateTimeDiff(new Date(), new Date(game.startedAt))
         }, 1000)
     } else {
-        statsPanel.querySelector('#gameTime').innerHTML = dateTimeDiff(new Date(), new Date(game.updatedAt))
+        statsPanel.querySelector('#gameTime').innerHTML = dateTimeDiff(new Date(), new Date(game.startedAt))
     }
 
     statsPanel.querySelector('#actionInterval').innerHTML = "Interval Time: " + game.turnTime + " hrs";
@@ -1555,6 +1585,10 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+    }
+
+    #infoPanel span span {
+        font-size: 10px;
     }
 
     .confirm {

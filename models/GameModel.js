@@ -25,12 +25,16 @@ const gameSchema = new mongoose.Schema({
     startedAt: { type: Date },
 
     // Game options
-    turnTime: { type: Number, default: 12 },
-    turnTimePassed: { type: Number, default: 0},
+    turnTime: { type: Number, default: 24 },
+    turnTimePassed: { type: Number, default: 0 },
 
     actionsPerInterval: { type: Number, default: 1 },
     tieCount: { type: Number, default: 2 },
 
+    // Numbers
+    giveRangeOffset: { type: Number, default: -1 }, // Negative one represents infinite range
+
+    // Boolean
     allowAlwaysJoin: { type: Boolean, default: false },
     allowVoteChange: { type: Boolean, default: false },
 

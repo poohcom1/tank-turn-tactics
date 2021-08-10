@@ -69,9 +69,13 @@ router.get('/credits', (req, res) => {
     res.render("pages/credits")
 })
 
+router.get('/changelog', (req, res) => {
+    res.render("pages/changelog")
+})
+
 // Admin
 router.get('/admin', isAdmin, async (req, res) => {
-    res.render("pages/admin")
+    res.render("pages/admin/admin-table")
 })
 
 module.exports = (app) => {
