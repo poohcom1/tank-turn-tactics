@@ -27,6 +27,10 @@ const playerSchema = new mongoose.Schema({
     health: {
         type: Number,
         default: 3
+    },
+    color: {
+        type: String,
+        default: "#00ffc3"
     }
 }, { timestamps: true });
 

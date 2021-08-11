@@ -4,19 +4,24 @@
  * @param {Object} size
  * @param {number} size.width
  * @param {number} size.height
+ * @param {{x: number, y: number}[]} takenLocations
  * @return {{x: number, y: number}[]}
  */
-module.exports.assignLocation = function (count, size) {
-    let coords = new Set();
+module.exports.assignLocation = function (count, size, takenLocations=[]) {
+    const takenLocationStrings = takenLocations.map(p => JSON.stringify(p))
+    let coords = new Set(takenLocationStrings);
 
-    while (coords.size < count) {
+    while (coords.size < count + takenLocationStrings.length) {
         const width = Math.floor(Math.random() * size.width);
         const height = Math.floor(Math.random() * size.height);
         coords.add(JSON.stringify({x: width, y: height})) // Stringify to bypass object shallow equality
     }
 
+    let coordsArray = Array.from(coords)
+    coordsArray = coordsArray.slice(takenLocationStrings.length, coords.size)
+
     // Reconvert set to array and parse json
-    return Array.from(coords).map(strObjects => JSON.parse(strObjects));
+    return coordsArray.map(strObjects => JSON.parse(strObjects));
 }
 
 /**

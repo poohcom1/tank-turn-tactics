@@ -2,19 +2,32 @@ const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
 
 /**
- * Checks if the player is authorized. Appends the user object to the request
+ * Appends the player of the game to the request
+ * @param req
+ * @param res
+ * @param next
+ * @return {Promise<void>}
+ */
+module.exports.getPlayer = async function (req, res, next) {
+    const gameId = req.params.gameId;
+
+    req.player = await Player.findOne({ game_id: gameId, user_id: req.user.id });
+
+    next();
+}
+
+
+/**
+ * Checks if the player is authorized. Checks the player in the request
  * @param req
  * @param res
  * @param next
  * @return {Promise<void>}
  */
 module.exports.checkPlayer = async function (req, res, next) {
-    const gameId = req.params.gameId;
-
-    const player = await Player.findOne({ game_id: gameId, user_id: req.user.id })
+    const player = req.player
 
     if (player && player.actions > 0 && player.health > 0) {
-        req.player = player;
         next();
     } else {
         res.status(401).send()

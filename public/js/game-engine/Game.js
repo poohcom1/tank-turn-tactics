@@ -230,13 +230,13 @@ class Driver {
  */
 function initDriver(div, mode, dimensions, background = Driver.TRANSPARENT, index = null) {
     if (!index) {
-        if (initDriver.zIndex) {
-            index = initDriver.zIndex++;
-        } else {
-            initDriver.zIndex = 0;
-            index = 0;
-        }
+        this.zIndex = this.zIndex || 0
+
+        index = this.zIndex++
     }
+
+    console.log(this.zIndex)
+
 
     div.style.position = 'relative';
 
@@ -334,8 +334,8 @@ function angleTo(source, target) {
     return Math.atan2(dy, dx)
 }
 
-function shortenName(name, length = 10) {
-    if (name.length > 10) name = name.slice(0, 10) + '...'
+function shortenName(name, length = 15) {
+    if (name.length > length) name = name.slice(0, length) + '...'
 
     return name;
 }

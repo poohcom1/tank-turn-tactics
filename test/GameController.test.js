@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 const { getMockReq, getMockRes } = require('@jest-mock/express')
 const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
-const { createGame, startGame, deleteGameRequest, getAllGames, getUserGamesRequest } = require('../controllers/GameController.js')
+const { createGameRequest, startGameRequest, deleteGameRequest, getAllGamesRequest, getUserGamesRequest } = require('../controllers/GameController.js')
 
 DBHandler.setup();
 
@@ -73,7 +73,7 @@ async function generateGames(count, gameData = null) {
 }
 
 describe("GameController", () => {
-    describe("createGame", () => {
+    describe("createGameRequest", () => {
         const userId = mongoose.Types.ObjectId();
         const username = "Test user";
 
@@ -104,7 +104,7 @@ describe("GameController", () => {
         })
 
         it("should create a game with the correct name", async () => {
-            await createGame(req, res)
+            await createGameRequest(req, res)
 
             const fetchedGameDoc = (await Game.find({}))[0];
 
@@ -112,7 +112,7 @@ describe("GameController", () => {
         })
 
         it("Should create a player with the right game_id", async () => {
-            await createGame(req, res)
+            await createGameRequest(req, res)
 
             const fetchedPlayerDoc = (await Player.find({}))[0];
             const fetchedGameDoc = (await Game.find({}))[0];
@@ -121,7 +121,7 @@ describe("GameController", () => {
         })
 
         it("Should create a player with the right user_id", async () => {
-            await createGame(req, res)
+            await createGameRequest(req, res)
 
             const fetchedPlayerDoc = (await Player.find({}))[0];
 
@@ -134,7 +134,7 @@ describe("GameController", () => {
                 throw new Error()
             });
 
-            await createGame(req, res)
+            await createGameRequest(req, res)
 
             const fetchedGameDocs = await Game.find({});
 
@@ -143,7 +143,7 @@ describe("GameController", () => {
         })
     })
 
-    describe("startGame",   () => {
+    describe("startGameRequest",   () => {
         let req;
 
         const { res, next, mockClear } = getMockRes();
@@ -163,7 +163,7 @@ describe("GameController", () => {
         })
 
         it("should initialize all players' position", async () => {
-            await startGame(req, res);
+            await startGameRequest(req, res);
 
             const fetchedPlayers = await Player.find({})
 
@@ -173,7 +173,7 @@ describe("GameController", () => {
         })
 
         it("should initialize unique positions", async () => {
-            await startGame(req, res);
+            await startGameRequest(req, res);
 
             const fetchedPlayers = await Player.find({})
 
@@ -240,7 +240,7 @@ describe("GameController", () => {
    })
 
     // Admin functions
-    describe("getAllGames", () => {
+    describe("getAllGamesRequest", () => {
         it("should fetch all games regardless of userId", async() => {
             const gamesToGenerate = 20;
 
@@ -252,7 +252,7 @@ describe("GameController", () => {
 
             const { res } = getMockRes();
 
-            await getAllGames({ user: { id: mongoose.Types.ObjectId }}, res);
+            await getAllGamesRequest({ user: { id: mongoose.Types.ObjectId }}, res);
 
             expect(res.json.mock.calls[0][0]).toHaveLength(gamesToGenerate);
         })

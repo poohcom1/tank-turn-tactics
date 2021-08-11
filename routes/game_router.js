@@ -1,6 +1,6 @@
 const router = require('express').Router();
-const { createGame, joinGame, getGame, startGame, getUserGamesRequest, getPlayer, getPlayers, deleteGameRequest, getAllGames,
-    renamePlayer
+const { createGameRequest, joinGameRequest, getGameRequest, startGameRequest, getUserGamesRequest, getPlayerRequest, getPlayers, deleteGameRequest, getAllGamesRequest,
+    renamePlayerRequest,editGameRequest
 } = require('../controllers/GameController.js')
 const { isAdmin } = require("../middlewares/auth_middleware.js");
 
@@ -8,24 +8,28 @@ const { isAdmin } = require("../middlewares/auth_middleware.js");
 
 router.delete('/:gameId', isAdmin, deleteGameRequest)
 
-router.get('/all', isAdmin, getAllGames)
+router.get('/all', isAdmin, getAllGamesRequest)
+
+router.put('/:gameId', isAdmin, editGameRequest)
 
 // User
 
-router.post('/', createGame);
+router.post('/', createGameRequest);
 
-router.post('/player', joinGame);
+router.get('/user', getUserGamesRequest)
 
-router.get('/', getUserGamesRequest)
-
-router.get('/:gameId/player', getPlayer)
+router.get('/:gameId/player', getPlayerRequest)
 
 router.get('/:gameId/players', getPlayers)
 
-router.get('/:gameId', getGame);
+router.get('/:gameId', getGameRequest);
 
-router.put('/:gameId/start', startGame);
+router.post('/player', joinGameRequest);
 
-router.put('/:gameId/rename/:name', renamePlayer)
+router.patch('/:gameId/start', startGameRequest);
+
+router.patch('/:gameId/rename/:name', renamePlayerRequest)
+
+
 
 module.exports = router;

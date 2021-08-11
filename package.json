@@ -21,7 +21,8 @@
     "mongoose": "^5.13.3",
     "node-schedule": "^2.0.0",
     "passport": "^0.4.1",
-    "passport-local": "^1.0.0"
+    "passport-local": "^1.0.0",
+    "validate-color": "^2.1.1"
   },
   "devDependencies": {
     "@jest-mock/express": "^1.4.2",

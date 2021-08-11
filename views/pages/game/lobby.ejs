@@ -26,7 +26,7 @@
                 const startButton = document.querySelector("#startGame");
 
                 startButton.addEventListener("click", () => {
-                    fetch(`/game/${ gameId }/start`, { method: 'PUT' })
+                    fetch(`/game/${ gameId }/start`, { method: 'PATCH' })
                         .then(() => window.location.reload())
                 })
             </script>
@@ -48,7 +48,7 @@
 
             const playersDiv = document.querySelector("#playerList")
 
-            const game = JSON.parse('<%- JSON.stringify(game) %>')
+            const game = JSON.parse(`<%- JSON.stringify(game) %>`)
             let players = game.players
             let userId = game.user_id
 
@@ -84,7 +84,7 @@
                                     return;
                                 }
 
-                                fetch(`/game/${ game._id }/rename/${ input.value }`, { method: 'PUT' })
+                                fetch(`/game/${ game._id }/rename/${ input.value }`, { method: 'PATCH' })
                                     .then(() => {
                                         text.innerHTML = input.value
                                         previousName = input.value

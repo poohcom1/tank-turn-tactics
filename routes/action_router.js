@@ -1,19 +1,21 @@
 const router = require('express').Router()
-const { moveRequest, attackRequest , upgradeRequest, giveRequest } = require('../controllers/ActionController.js')
-const { checkPlayer, checkGame } = require("../middlewares/action_middleware.js");
+const { moveRequest, attackRequest , upgradeRequest, giveRequest, patchColorRequest } = require('../controllers/ActionController.js')
+const { getPlayer, checkPlayer, checkGame } = require("../middlewares/action_middleware.js");
 
 /**
  * Route root: /action
  */
 
-router.post('/:gameId/move', checkPlayer, checkGame, moveRequest);
+router.post('/:gameId/move', getPlayer, checkPlayer, checkGame, moveRequest);
 
-router.post('/:gameId/attack/:targetId/actions/:count', checkPlayer, checkGame, attackRequest);
+router.post('/:gameId/attack/:targetId/actions/:count', getPlayer, checkPlayer, checkGame, attackRequest);
 
-router.post('/:gameId/give/:targetId/actions/:count', checkPlayer, checkGame, giveRequest)
+router.post('/:gameId/give/:targetId/actions/:count', getPlayer, checkPlayer, checkGame, giveRequest)
 
-router.post('/:gameId/upgrade/:upgrade/count/:count', checkPlayer, checkGame, upgradeRequest);
+router.post('/:gameId/upgrade/:upgrade/actions/:count', getPlayer, checkPlayer, checkGame, upgradeRequest);
 
+// Player
 
+router.patch('/:gameId/color/:color', getPlayer, checkGame, patchColorRequest)
 
 module.exports = router;
