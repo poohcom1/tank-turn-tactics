@@ -16,6 +16,8 @@
     <span id="actionInterval"></span>
     <span id="actionsPerInterval"></span>
     <span>|</span>
+    <span class="options">Range Mode:</span><a id="rangeMode" style="display: inline-block"></a>
+    <span class="options">Range Display:</span><a id="rangeDisplay" style="display: inline-block"></a>
 </div>
 
 <div id="gameContainer"></div>
@@ -28,10 +30,11 @@
 
 <div id="infoPanel" class="panel">
     <h3>
-        <span id="name"></span>
         <span id="colorBoxDiv" style="max-width: 20px; max-height: 20px; overflow: hidden; display: inline-block">
-            <label for="colorBox"></label><input type="color" id="colorBox" value="#ffffff"/>
+            <label for="colorBox"></label>
+            <input type="color" id="colorBox" value="#ffffff" />
         </span>
+        <span id="name"></span>
     </h3>
     <p id="id"></p>
 
@@ -76,6 +79,38 @@
 <script type="text/javascript" src="js/game/gui/TargetGui.js"></script>
 <script type="text/javascript" src="js/game/gui/target/AttackGui.js"></script>
 <script type="text/javascript" src="js/game/gui/target/GiveGui.js"></script>
+
+<script>
+    const RANGE_MODES = { CIRCLE: "RADIUS", SQUARE: "SQUARE" }
+    let rangeMode = localStorage.getItem('rangeMode') || RANGE_MODES.CIRCLE
+    const rangeModeAnchor = document.querySelector('#rangeMode')
+    rangeModeAnchor.innerHTML = rangeMode
+
+    rangeModeAnchor.onclick = () => {
+        if (rangeMode === RANGE_MODES.CIRCLE) {
+            rangeMode = RANGE_MODES.SQUARE
+        } else {
+            rangeMode = RANGE_MODES.CIRCLE
+        }
+        localStorage.setItem('rangeMode', rangeMode)
+        rangeModeAnchor.innerHTML = rangeMode
+    }
+
+    const RANGE_DISPLAY = { SELECTED: "SELECTED", ALL: "ALL" }
+    let rangeDisplay = localStorage.getItem('rangeDisplay') || RANGE_DISPLAY.SELECTED
+    const rangeDisplayAnchor = document.querySelector('#rangeDisplay')
+    rangeDisplayAnchor.innerHTML = rangeDisplay
+
+    rangeDisplayAnchor.onclick = () => {
+        if (rangeDisplay === RANGE_DISPLAY.SELECTED) {
+            rangeDisplay = RANGE_DISPLAY.ALL
+        } else {
+            rangeDisplay = RANGE_DISPLAY.SELECTED
+        }
+        localStorage.setItem('rangeDisplay', rangeDisplay)
+        rangeDisplayAnchor.innerHTML = rangeDisplay
+    }
+</script>
 
 <script>
     let game;
@@ -287,6 +322,7 @@
     let userTank;
 
     function updateTanks(firstTime = false, forced = false) {
+        Tank.count = 0;
         tankDriver.components = game.players.map(player => new Tank(player))
 
         userTank = tankDriver.components.find(tank => tank.player.user_id === game.user_id) // Init selected tank
@@ -583,6 +619,7 @@
     #statsPanel {
         position: absolute;
         margin: 10px;
+        z-index: 300;
     }
 
     .panel {
@@ -719,7 +756,8 @@
         left: 50%;
         bottom: 50%;
         transform: translateX(-50%);
-        background-color: black
+        background-color: black;
+        z-index: 100;
     }
 
     #statsPanel span {
@@ -729,5 +767,9 @@
 
     #statsPanel #deathMessage {
         color: red
+    }
+
+    #statsPanel .options {
+        margin-right: 1px;
     }
 </style>

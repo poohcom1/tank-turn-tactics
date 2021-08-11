@@ -1,12 +1,18 @@
 
 class Tank extends Driver.ActiveComponent {
+    static animInd = 0
+    static count = 0
+    
     constructor(player) {
         super();
         this.player = player
         this.box = this.player.box
 
         this.move(player.position)
+
+        Tank.count++;
     }
+
 
     move(pos) {
         this.box = grid[pos.x][pos.y];
@@ -18,6 +24,13 @@ class Tank extends Driver.ActiveComponent {
     }
 
     update(driver) {
+        // Animation
+
+        if (rangeMode === RANGE_MODES.SQUARE) {
+            Tank.animInd += 0.5/Tank.count;
+            if (Tank.animInd > 2*(game.size.width + game.size.height)) Tank.animInd = 0;
+        }
+
         // On tank selected
         if (driver.mouse_events.pressed
             && inBounds(driver.mouse_events, this)
@@ -137,53 +150,109 @@ class Tank extends Driver.ActiveComponent {
             ctx.stroke()
         }
 
-        if (selectedTank === this || actionState === ACTION_STATES.MV) {
+        let isMoving = false;
+
+        if (selectedTank === this || actionState === ACTION_STATES.MV || rangeDisplay === RANGE_DISPLAY.ALL) {
             let center = this
 
             if (actionState === ACTION_STATES.MV && this === userTank) {
                 center = hoveredBox
+                isMoving = true;
             }
 
             if (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.BUTTONS || actionState === ACTION_STATES.MV || actionState === ACTION_STATES.ATK) {
+                let color;
 
-                ctx.beginPath()
-                ctx.arc(center.x + this.width / 2, center.y + this.height / 2, this.player.range * this.width + this.width / 2, 0, 2 * Math.PI)
                 if (this.player === USER_PLAYER) {
-
                     if (actionState === ACTION_STATES.ATK) {
                         if (attackGui.selectedTarget) {
-                            ctx.strokeStyle = c_atkMarkedTarget
+                            color = c_atkMarkedTarget
                         } else {
-                            ctx.strokeStyle = c_atkTarget
+                            color = c_atkTarget
                         }
                     } else {
-                        ctx.strokeStyle = c_playerRange
+                        color = this.player.color
                     }
                 } else {
-                    ctx.strokeStyle = c_enemyRange
+                    color = this.player.color
                 }
 
                 if (actionState === ACTION_STATES.MV) {
-                    ctx.strokeStyle = "rgba(255,255,255,0.19)"
+                    color = "rgba(255,255,255,0.19)"
                 }
 
-                ctx.setLineDash([ 15, 10 ])
-                ctx.stroke()
-
+                if (rangeMode === RANGE_MODES.CIRCLE) {
+                    this.drawCircleRange(ctx, this.player.range , color, [15, 10], center)
+                } else {
+                    if (!isMoving)
+                        this.drawSquareRange(ctx, this.player.range, this.player.color)
+                }
             }
 
             if (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.BUTTONS || actionState === ACTION_STATES.GV) {
                 // Give range
                 if (game.giveRangeOffset && game.giveRangeOffset >= 0) {
-                    ctx.beginPath()
-                    ctx.arc(center.x + this.width / 2, center.y + this.height / 2, (this.player.range + game.giveRangeOffset) * this.width + this.width / 2, 0, 2 * Math.PI)
-                    ctx.strokeStyle = "rgba(88,255,81,0.16)"
-                    ctx.setLineDash([ 5, 2 ])
-                    ctx.stroke()
+                    if (rangeMode === RANGE_MODES.CIRCLE) {
+                        this.drawCircleRange(ctx, this.player.range + game.giveRangeOffset, "rgba(88,255,81,0.16)", [5, 2])
+                    } else {
+                        // this.drawSquareRange(ctx, this.player.range, this.player.color + game.giveRangeOffset)
+                    }
                 }
             }
 
             ctx.shadowBlur = 0
         }
     }
+
+    /**
+     *
+     * @param ctx
+     * @param radius
+     * @param color
+     * @param dash
+     * @param center
+     */
+    drawCircleRange(ctx, radius, color, dash, center = this.x) {
+        ctx.beginPath()
+        ctx.arc(center.x + this.width / 2, center.y + this.height / 2, radius * this.width + this.width / 2, 0, 2 * Math.PI)
+        ctx.strokeStyle = color
+        ctx.setLineDash(dash)
+        ctx.stroke()
+    }
+
+    drawSquareRange(ctx, range, color, centerCoords = this.player.position) {
+        const startX = Math.max(centerCoords.x - range, 0);
+        const endX = Math.min(centerCoords.x + range + 1, game.size.width)
+
+        const startY = Math.max(centerCoords.y - range, 0);
+        const endY = Math.min(centerCoords.y + range + 1, game.size.height)
+
+        for (let x = startX, i = 0; x < endX; x++, i++) {
+            for (let y = startY, j = 0; y < endY; y++, j++) {
+                if (inRange(this.player.position, { x, y }, range)) {
+                    let index = Tank.animInd
+
+                    index += x + y
+                    if (index > (game.size.width + game.size.height)) {
+                        index = 2 * (game.size.width + game.size.height) - index
+                    }
+
+                    if (index < 0) {
+                        index = -index
+                    }
+
+                    const brightnessPercent = (index)/(game.size.width + game.size.height)
+
+                    const MAX_BRIGHTNESS = 100;
+                    const brightness = Math.floor(brightnessPercent * MAX_BRIGHTNESS);
+
+                    ctx.fillStyle = color + brightness.toString(16).padStart(2, '0')
+
+                    const pos = grid[x][y]
+                    ctx.fillRect(pos.x, pos.y, GRID_SIZE, GRID_SIZE)
+                }
+            }
+        }
+    }
 }
+

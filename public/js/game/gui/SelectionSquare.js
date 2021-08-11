@@ -4,7 +4,7 @@ class SelectionSquare extends Driver.ActiveComponent {
         this.animationIndex = 0;
     }
 
-    update = () => {
+    update = driver => {
         this.x = hoveredBox.x;
         this.y = hoveredBox.y;
         this.width = GRID_SIZE;
@@ -13,7 +13,7 @@ class SelectionSquare extends Driver.ActiveComponent {
         this.animationIndex += 0.5;
         if (this.animationIndex >= 20) this.animationIndex = 0
 
-        if (actionState === ACTION_STATES.SELECT) updateHint("Coordinate:", `${ getChar(hoveredBox.coords.x) }${ hoveredBox.coords.y + 1 }`)
+        if (actionState === ACTION_STATES.SELECT || actionState === ACTION_STATES.BUTTONS) updateHint("Coordinate:", `${ getChar(hoveredBox.coords.x) }${ hoveredBox.coords.y + 1 }`)
 
     }
 
