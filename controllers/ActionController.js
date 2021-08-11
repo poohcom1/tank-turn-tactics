@@ -296,7 +296,6 @@ async function patchColorRequest(req, res) {
     }
 
     player.color = color;
-    console.log(player)
 
     try {
         await player.save();

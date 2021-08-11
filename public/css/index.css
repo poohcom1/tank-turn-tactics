@@ -185,6 +185,11 @@ input, select {
     margin-right: 0;
 }
 
+input[type='checkbox'] {
+    width: 20px;
+    height: 20px;
+}
+
 select {
     background-color: black;
     color: white;
@@ -224,6 +229,7 @@ select {
 .card {
     background-color: rgba(0, 0, 0, 0.56);
     box-shadow: 0 0 5px 25px rgba(0, 0, 0, 0.56);
+    overflow-y: scroll;
 }
 
 /* Scrollbar */

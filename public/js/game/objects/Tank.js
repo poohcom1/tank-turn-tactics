@@ -57,7 +57,6 @@ class Tank extends Driver.ActiveComponent {
 
 
         if (driver.key_pressed['Escape'] && this === userTank) {
-            console.log(justCancelledActionsGui)
             if (justCancelledActionsGui) {
                 justCancelledActionsGui = false
             } else if (actionState === ACTION_STATES.BUTTONS) {

@@ -132,7 +132,7 @@
         }
     }
 
-    initGame(JSON.parse('<%- JSON.stringify(game) %>'), true);
+    initGame(JSON.parse(`<%- JSON.stringify(game) %>`), true);
 
     // Fetching
     function refetch(forced = true) {
@@ -371,7 +371,7 @@
 
     const colorPickerInput = document.querySelector("#colorBox")
 
-    colorPickerInput.value = userTank.player.color ?? "#ffffff";
+    colorPickerInput.value = userTank?.player.color ?? "#ffffff";
 
     colorPickerInput.onchange = e => {
         const color = encodeURIComponent(e.target.value)

@@ -60,6 +60,16 @@ module.exports.createGameRequest = async (req, res) => {
     }
 }
 
+function createPlayerObject(name, game, user, data=[]) {
+    return {
+        name: name !== '' ? name : user.email,
+        user_id: user.id,
+        game_id: game._id,
+        actions: game.actionsPerInterval,
+        ...data
+    }
+}
+
 /**
  * Adds current user to game
  * @param req POST form
@@ -71,17 +81,32 @@ module.exports.joinGameRequest = async function (req, res) {
     const responseJson = req.body;
 
     let game;
+    let players;
     let player
 
     try {
         game = await Game.findById(responseJson.gameId)
-        player = await Player.findOne({ game_id: responseJson.gameId, user_id: req.user.id })
     } catch (e) {
         return res.redirect('/join?error=nonexistent')
     }
 
+    try {
+        players = await Player.find({ game_id: responseJson.gameId })
+        player = players.find(p => p.user_id === req.user.id)
+    } catch (e) {
+        return res.status(501).send()
+    }
+
     if (game.hasStarted) {
-        if (player) {
+        if (player && !game.allowAlwaysJoin) {
+            return res.redirect('/play?game=' + responseJson.gameId)
+        } else if (game.allowAlwaysJoin) {
+            const positions = players.map(p => p.position)
+
+            const position = assignLocation(1, game.size, positions)[0];
+
+            await new Player(createPlayerObject(responseJson.displayName, game, req.user, { position })).save()
+
             return res.redirect('/play?game=' + responseJson.gameId)
         } else {
             return res.redirect('/join?error=gameStarted')
@@ -96,12 +121,7 @@ module.exports.joinGameRequest = async function (req, res) {
     }
 
     try {
-        await new Player({
-            name: responseJson.displayName !== '' ? responseJson.displayName : req.user.email,
-            user_id: req.user.id,
-            game_id: responseJson.gameId,
-            actions: game.actionsPerInterval
-        }).save()
+        await new Player(createPlayerObject(responseJson.displayName, game, req.user)).save()
 
         res.redirect('/play?game=' + responseJson.gameId)
     } catch (e) {
@@ -165,7 +185,6 @@ module.exports.startGameRequest = async function (req, res) {
 
     await Game.findByIdAndUpdate(gameId, {
         hasStarted: true,
-        actionsPerDay: 2,
         startedAt: new Date()
     })
 
@@ -276,7 +295,7 @@ module.exports.deleteGame = deleteGame;
 module.exports.deleteGameRequest = async function (req, res) {
     const gameId = req.params.gameId;
 
-    const results = deleteGame(gameId)
+    const results = await deleteGame(gameId)
 
     return res.status(results.status).send(results.message)
 }
