@@ -92,15 +92,20 @@ module.exports.joinGameRequest = async function (req, res) {
 
     try {
         players = await Player.find({ game_id: responseJson.gameId })
-        player = players.find(p => p.user_id === req.user.id)
+        player = players.find(p => p.user_id.equals(req.user.id))
     } catch (e) {
         return res.status(501).send()
+    }
+
+    if (player) {
+        console.log("Player already joined!")
+        return res.redirect('/play?game=' + game._id)
     }
 
     if (game.hasStarted) {
         if (player && !game.allowAlwaysJoin) {
             return res.redirect('/play?game=' + responseJson.gameId)
-        } else if (game.allowAlwaysJoin) {
+        } else if (game.allowAlwaysJoin && players.filter(p => p.health > 0).length > 1) {
             const positions = players.map(p => p.position)
 
             const position = assignLocation(1, game.size, positions)[0];
@@ -113,12 +118,6 @@ module.exports.joinGameRequest = async function (req, res) {
         }
     }
 
-    const existingPlayers = await Player.find({ user_id: req.user.id, game_id: game._id })
-
-    if (existingPlayers && existingPlayers.length > 0) {
-        console.log("Player already joined!")
-        return res.redirect('/play?game=' + game._id)
-    }
 
     try {
         await new Player(createPlayerObject(responseJson.displayName, game, req.user)).save()
@@ -174,7 +173,6 @@ module.exports.startGameRequest = async function (req, res) {
     // Fetch game and its players
     const players = await Player.find({ game_id: gameId })
     const game = await Game.findOne({ _id: gameId })
-
 
     const locations = assignLocation(players.length, game.size)
 
