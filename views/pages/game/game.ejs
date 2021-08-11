@@ -249,7 +249,6 @@
     let tankIndex = 0;
 
     addEventListener('keydown', e => {
-
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
 
             if (e.key === "ArrowDown" || e.key === 'ArrowUp') {
@@ -265,6 +264,11 @@
             updateInfo()
         }
 
+        if (e.key === ' ' && userTank) {
+            selectedTank = userTank
+            centerTank(userTank)
+            updateInfo()
+        }
     })
 
     // --------------------------------------------BACKGROUND-------------------------------------------------

@@ -235,9 +235,6 @@ function initDriver(div, mode, dimensions, background = Driver.TRANSPARENT, inde
         index = this.zIndex++
     }
 
-    console.log(this.zIndex)
-
-
     div.style.position = 'relative';
 
     const canvas = document.createElement('canvas');
