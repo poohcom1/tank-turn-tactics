@@ -211,7 +211,7 @@
     const c_playerRange = 'rgb(117,255,234)'
     const c_enemyRange = '#ff0000'
 
-    const c_moveBlock = 'rgba(101,249,255,0.21)'
+    const c_moveBlock = 'rgba(255,255,255,0.3)'
     const c_moveCancel = 'rgba(255,242,101,0.2)'
     const c_moveOutOfRange = 'rgba(255,0,0,0.29)'
     const c_moveLine = '#60d5ff'
@@ -230,7 +230,7 @@
     const parentDiv = document.querySelector('#gameContainer')
     const GRID_PADDING = GRID_SIZE * 2;
     const FOOTER_PADDING = 150;
-    const RIGHT_PADDING = 250;
+    const RIGHT_PADDING = 450;
     const gameDim = {
         width: size.width * GRID_SIZE + GRID_PADDING + RIGHT_PADDING,
         height: size.height * GRID_SIZE + GRID_PADDING + FOOTER_PADDING
@@ -249,9 +249,10 @@
     let tankIndex = 0;
 
     addEventListener('keydown', e => {
-        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
 
-            if (e.key === "ArrowDown") {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+
+            if (e.key === "ArrowDown" || e.key === 'ArrowUp') {
                 tankIndex++;
                 if (tankIndex >= tankDriver.components.length) tankIndex = 0
             } else {
@@ -621,11 +622,7 @@
         padding-bottom: 40px;
     }
 
-    #statsPanel {
-        position: absolute;
-        margin: 10px;
-        z-index: 300;
-    }
+
 
     .panel {
         padding: 15px;
@@ -764,6 +761,12 @@
         transform: translateX(-50%);
         background-color: black;
         z-index: 100;
+    }
+
+    #statsPanel {
+        position: fixed;
+        margin: 10px;
+        z-index: 500;
     }
 
     #statsPanel span {
