@@ -506,6 +506,18 @@
         upgradeButtons.forEach(a => a.classList.remove('disabled'))
     }
 
+    function resetUpgrades() {
+        deltaActions = 0;
+        updateInfo()
+
+        Object.keys(actionsToAdd).forEach(k => {
+            deltaActions -= actionsToAdd[k]
+            actionsToAdd[k] = 0
+        })
+
+        document.querySelectorAll('.actionsToAdd').forEach(n => n.innerHTML = '')
+    }
+
     // Info panel
     document.querySelectorAll("#infoPanel .upgrade").forEach(node => {
         const upgradeName = node.dataset.upgrade;
@@ -518,15 +530,14 @@
 
         node.querySelector("a.plus").onclick = () => {
             if (node.querySelector("a.plus").classList.contains("disabled")) return;
-            console.log(selectedTank.player.actions, deltaActions)
-            if (selectedTank && deltaActions >= selectedTank.player.actions) return;
+            if (selectedTank && deltaActions + actionCost > selectedTank.player.actions) return;
 
             if (actionsToAdd[upgradeName]) {
                 actionsToAdd[upgradeName] += 1;
                 deltaActions += actionCost
             } else {
                 actionsToAdd[upgradeName] = 1;
-                deltaActions = actionCost
+                deltaActions += actionCost
             }
 
             node.querySelector(".actionsToAdd").innerHTML = actionsToAdd[upgradeName] > 0 ? `+${ actionsToAdd[upgradeName] }` : ''
@@ -553,13 +564,7 @@
 
     document.querySelector("#infoPanel .cancel").onclick = () => {
         if (document.querySelector("a.cancel").classList.contains("disabled")) return;
-        Object.keys(actionsToAdd).forEach(k => {
-            deltaActions -= actionsToAdd[k]
-            actionsToAdd[k] = 0
-        })
-
-        document.querySelectorAll('.actionsToAdd').forEach(n => n.innerHTML = '')
-        updateInfo()
+        resetUpgrades()
     }
 
     document.querySelector("#infoPanel .confirm").onclick = () => {
@@ -637,6 +642,7 @@
         right: 0;
         max-height: 70%;
         overflow-y: hidden;
+        z-index: 300;
     }
 
     #infoPanel h3 {
@@ -771,5 +777,9 @@
 
     #statsPanel .options {
         margin-right: 1px;
+    }
+
+    footer {
+        z-index: 500;
     }
 </style>

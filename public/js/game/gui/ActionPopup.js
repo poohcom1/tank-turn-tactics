@@ -53,6 +53,7 @@ class ActionPopup extends Driver.ActiveComponent {
             actionGuis.forEach(a => a.init())
             this.hover = false;
             driver.mouse_events.pressed = false;
+            resetUpgrades()
         }
     }
 
