@@ -27,7 +27,7 @@ class Tank extends Driver.ActiveComponent {
         // Animation
 
         if (rangeMode === RANGE_MODES.SQUARE) {
-            Tank.animInd += 0.5/Tank.count;
+            Tank.animInd += 1/Tank.count;
             if (Tank.animInd > 2*(game.size.width + game.size.height)) Tank.animInd = 0;
         }
 
@@ -244,7 +244,8 @@ class Tank extends Driver.ActiveComponent {
                     const brightnessPercent = (index)/(game.size.width + game.size.height)
 
                     const MAX_BRIGHTNESS = 100;
-                    const brightness = Math.floor(brightnessPercent * MAX_BRIGHTNESS);
+                    const BRIGHTNESS_OFFSET = 15
+                    const brightness = Math.floor(brightnessPercent * MAX_BRIGHTNESS) + BRIGHTNESS_OFFSET;
 
                     ctx.fillStyle = color + brightness.toString(16).padStart(2, '0')
 
