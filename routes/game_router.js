@@ -10,13 +10,11 @@ router.delete('/:gameId', isAdmin, deleteGameRequest)
 
 router.get('/all', isAdmin, getAllGamesRequest)
 
-//router.post('/:gameId', isAdmin, editGameRequest)
+router.put('/:gameId', isAdmin, editGameRequest)
 
 // User
 
 router.post('/', createGameRequest);
-
-router.post('/player', joinGameRequest);
 
 router.get('/user', getUserGamesRequest)
 
@@ -26,9 +24,11 @@ router.get('/:gameId/players', getPlayers)
 
 router.get('/:gameId', getGameRequest);
 
-router.put('/:gameId/start', startGameRequest);
+router.post('/player', joinGameRequest);
 
-router.put('/:gameId/rename/:name', renamePlayerRequest)
+router.patch('/:gameId/start', startGameRequest);
+
+router.patch('/:gameId/rename/:name', renamePlayerRequest)
 
 
 

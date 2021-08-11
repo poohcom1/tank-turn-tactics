@@ -41,7 +41,7 @@ const gameSchema = new mongoose.Schema({
     doActionQueue: { type: Boolean, default: false },
     doBroadcastAction: { type: Boolean, default: true },
 
-    doFogOfWar: { type: Boolean, default: true },
+    doFogOfWar: { type: Boolean, default: false },
     doBounty: { type: Boolean, default: true },
     doEscort: { type: Boolean, default: false },
 

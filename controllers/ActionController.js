@@ -1,5 +1,7 @@
 const { checkRange, checkGrid } = require('../libs/game_utils.js')
 
+// Router: ./routes/action_router.js
+
 // All routes to game will have req.game and req.player
 const Player = require("../models/PlayerModel.js");
 
@@ -282,15 +284,40 @@ async function giveRequest(req, res) {
     }
 }
 
+
+
+// Player controller
+async function patchColorRequest(req, res) {
+    const player = req.player
+    const color = req.params.color;
+
+    if (!require('validate-color').validateHTMLColor(color)) {
+        return res.status(403).send()
+    }
+
+    player.color = color;
+    console.log(player)
+
+    try {
+        await player.save();
+        res.status(200).send()
+    } catch (e) {
+        res.status(501).send(e)
+    }
+}
+
 module.exports = {
     move,
     attack,
     upgrade,
     give,
+
     moveRequest,
     attackRequest,
     upgradeRequest,
     giveRequest,
+
+    patchColorRequest,
 
     isAdjacent
 }

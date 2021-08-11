@@ -3,7 +3,21 @@ const Player = require('../models/PlayerModel.js')
 const { assignLocation } = require("../libs/game_utils.js");
 const mongoose = require("mongoose");
 
-// Form routes
+// Base controllers
+
+function sanitizePlayers(players, userId, hiddenFields = ['actions']) {
+    players.forEach(p => {
+        if (!p.user_id.equals(userId)) {
+            hiddenFields.forEach(field => {
+                delete p[field]
+            })
+        }
+    })
+
+    return players
+}
+
+// Request controllers
 
 /**
  * Creates a game from the creation form
@@ -101,16 +115,13 @@ module.exports.joinGameRequest = async function (req, res) {
 async function getGame(gameId, userId) {
     const game = await Game.findById(gameId).lean();
     game.players = await Player.find({ game_id: game._id }).lean();
-    game.players.forEach(p => {
-        if (!p.user_id.equals(userId)) {
-            p.actions = 2;
-        }
-    })
+    sanitizePlayers(game.players, userId)
     game.user_id = userId;
 
     return game;
 }
 
+module.exports.getGame = getGame
 
 /**
  * Takes a gameId as a GET param and sends a game object with a list of player ids attached.
@@ -192,6 +203,7 @@ async function getUserGames(userId) {
     for (let i = gameList.length - 1; i >= 0; i--) {
         const game = gameList[i];
 
+        // Check for missing game objects
         if (!game) {
             const players = await Player.find({})
 
@@ -213,7 +225,7 @@ async function getUserGames(userId) {
         }
     }
 
-    return await joinGamesWithPlayer(gameList)
+    return await joinGamesWithPlayer(gameList, userId)
 }
 
 module.exports.getUserGames = getUserGames
@@ -230,14 +242,15 @@ module.exports.getUserGamesRequest = async function (req, res) {
 /**
  * Appends all a games player to the game as 'players'
  * @param gameObjects
+ * @param userId
  * @return {Promise<Game[]>}
  */
-async function joinGamesWithPlayer(gameObjects) {
+async function joinGamesWithPlayer(gameObjects, userId) {
     return await Promise.all(gameObjects.map(
         async game => {
 
             game.players = [];
-            game.players = await Player.find({ game_id: mongoose.Types.ObjectId(game._id) });
+            game.players = sanitizePlayers(await Player.find({ game_id: mongoose.Types.ObjectId(game._id) }).lean(), userId );
 
             return game;
 

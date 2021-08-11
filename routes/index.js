@@ -2,7 +2,7 @@ const router = require('express').Router()
 const { isLoggedIn, isAdmin } = require('../middlewares/auth_middleware.js')
 const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
-const { getUserGames } = require("../controllers/GameController.js");
+const { getUserGames, getGame } = require("../controllers/GameController.js");
 
 // Pages
 router.get('/', async (req, res) => {
@@ -46,9 +46,7 @@ router.get('/join/:gameId?', isLoggedIn, (req, res, next) => {
 router.get('/play', isLoggedIn, async (req, res) => {
     const gameId = req.query.game
 
-    const game = await Game.findById(gameId).lean();
-    game.players = await Player.find({ game_id: game._id });
-    game.user_id = req.user.id;
+    const game = await getGame(gameId, req.user.id)
 
     if (game.hasStarted) {
         res.render('pages/game/game', { game: game })
