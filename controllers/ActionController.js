@@ -186,7 +186,6 @@ async function give(game, player, data) {
  * @return {Promise<boolean>}
  */
 async function logAction(game, playerId, action, data, type) {
-    console.log(action)
     game[type].push({
         action: action,
         player_id: playerId,
@@ -202,7 +201,7 @@ async function logAction(game, playerId, action, data, type) {
     }
 }
 
-async function moveRequest(req, res) {
+async function moveReq(req, res) {
     if (!req.game.doActionQueue) {
         const result = await move(req.game, req.player, req.body);
 
@@ -221,7 +220,7 @@ async function moveRequest(req, res) {
     }
 }
 
-async function attackRequest(req, res) {
+async function attackReq(req, res) {
     if (!req.game.doActionQueue) {
         const result = await attack(req.game, req.player, { target_id: req.params.targetId, count: req.params.count })
 
@@ -240,7 +239,7 @@ async function attackRequest(req, res) {
 
 }
 
-async function upgradeRequest(req, res) {
+async function upgradeReq(req, res) {
     if (!req.game.doActionQueue) {
         const result = await upgrade(req.game, req.player, { upgrade: req.params.upgrade, count: req.params.count });
 
@@ -264,7 +263,7 @@ async function upgradeRequest(req, res) {
     }
 }
 
-async function giveRequest(req, res) {
+async function giveReq(req, res) {
     if (!req.game.doActionQueue) {
         const result = await give(req.game, req.player, { target_id: req.params.targetId, count: req.params.count });
 
@@ -287,7 +286,55 @@ async function giveRequest(req, res) {
 
 
 // Player controller
-async function patchColorRequest(req, res) {
+async function voteReq(req, res) {
+    voteReq.VOTE_TYPES = {
+        JURY: 'jury_vote'
+    }
+
+    voteReq.voteTypeError = "Unknown voting type!"
+    voteReq.playerDeadError = "Voting player not dead or voted player already dead!"
+    voteReq.playerNotFoundError = "Player not found!"
+
+    const player = req.player;
+    const voteType = req.params.vote;
+
+    if (!Object.keys(voteReq.VOTE_TYPES).includes(voteType)) {
+        console.log(voteReq.voteTypeError)
+        return res.status(403).send(voteReq.voteTypeError);
+    }
+
+    // Check if player id is valid
+    let votedPlayer;
+    try {
+        votedPlayer = await Player.findById(req.params.playerId)
+
+        if (!votedPlayer || !votedPlayer.game_id.equals(req.game._id)) {
+            console.log(voteReq.playerNotFoundError);
+            return res.status(403).send(voteReq.playerNotFoundError);
+        }
+
+        if (votedPlayer.health <= 0 || player.health > 0) {
+            console.log(voteReq.playerDeadError);
+            return res.status(403).send(voteReq.playerDeadError)
+        }
+
+    } catch (e) {
+        console.log(e)
+        return res.status(501).send(e)
+    }
+
+    player[voteReq.VOTE_TYPES[voteType]] = votedPlayer._id;
+
+    try {
+        await player.save();
+        res.status(200).send()
+    } catch (e) {
+        console.log(e)
+        res.status(501).send(e)
+    }
+}
+
+async function patchColorReq(req, res) {
     const player = req.player
     const color = req.params.color;
 
@@ -311,12 +358,14 @@ module.exports = {
     upgrade,
     give,
 
-    moveRequest,
-    attackRequest,
-    upgradeRequest,
-    giveRequest,
+    moveReq,
+    attackReq,
+    upgradeReq,
+    giveReq,
 
-    patchColorRequest,
+    voteReq,
+
+    patchColorReq,
 
     isAdjacent
 }

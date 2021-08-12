@@ -31,6 +31,12 @@ const playerSchema = new mongoose.Schema({
     color: {
         type: String,
         default: "#00ffc3"
+    },
+
+    // Votes
+    jury_vote: {
+        type: mongoose.Types.ObjectId,
+        ref: "Player"
     }
 }, { timestamps: true });
 
