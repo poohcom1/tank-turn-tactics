@@ -25,11 +25,8 @@ class Tank extends Driver.ActiveComponent {
 
     update(driver) {
         // Animation
-
-        if (rangeMode === RANGE_MODES.SQUARE) {
-            Tank.animInd += 1/Tank.count;
-            if (Tank.animInd > 2*(game.size.width + game.size.height)) Tank.animInd = 0;
-        }
+        Tank.animInd += 1/Tank.count;
+        if (Tank.animInd > 2*(game.size.width + game.size.height)) Tank.animInd = 0;
 
         // On tank selected
         if (driver.mouse_events.pressed
@@ -146,7 +143,7 @@ class Tank extends Driver.ActiveComponent {
             ctx.moveTo(this.x + this.width / 2, this.y + this.height)
             ctx.lineTo(this.x + this.width / 2, gameDim.height - FOOTER_PADDING)
             ctx.setLineDash([])
-            ctx.strokeStyle = 'rgba(14,255,229,0.55)'
+            ctx.strokeStyle = this.player.color
             ctx.stroke()
         }
 
@@ -171,10 +168,10 @@ class Tank extends Driver.ActiveComponent {
                             color = c_atkTarget
                         }
                     } else {
-                        color = this.player.color
+                        color = this.player.color + "55"
                     }
                 } else {
-                    color = this.player.color
+                    color = this.player.color + "55"
                 }
 
                 if (actionState === ACTION_STATES.MV) {
@@ -182,7 +179,7 @@ class Tank extends Driver.ActiveComponent {
                 }
 
                 if (rangeMode === RANGE_MODES.CIRCLE) {
-                    this.drawCircleRange(ctx, this.player.range , color, [15, 10], center)
+                    this.drawCircleRange(ctx, this.player.range , color, [10, 10], center)
                 } else {
                     if (!isMoving)
                         this.drawSquareRange(ctx, this.player.range, this.player.color)
@@ -213,10 +210,16 @@ class Tank extends Driver.ActiveComponent {
      * @param center
      */
     drawCircleRange(ctx, radius, color, dash, center = this.x) {
+        const offsetMax = dash.reduce((a, b) => a + b, 0);
+        const currentOffset = (Tank.animInd/(game.size.width + game.size.height)) * offsetMax
+
         ctx.beginPath()
-        ctx.arc(center.x + this.width / 2, center.y + this.height / 2, radius * this.width + this.width / 2, 0, 2 * Math.PI)
+        ctx.arc(center.x + this.width / 2,
+            center.y + this.height / 2,
+            radius * this.width + this.width / 2, 0, 2 * Math.PI)
         ctx.strokeStyle = color
         ctx.setLineDash(dash)
+        ctx.lineDashOffset = -currentOffset
         ctx.stroke()
     }
 

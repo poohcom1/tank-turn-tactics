@@ -19,7 +19,7 @@ router.post('/:gameId/upgrade/:upgrade/actions/:count', getPlayer, checkPlayer, 
 // Player
 
 /**
- * Vote types: "JURY"
+ * Vote types: "vote_jury"
  */
 router.patch('/:gameId/vote/:vote/player/:playerId', getPlayer, checkGame, voteReq)
 

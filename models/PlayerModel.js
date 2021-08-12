@@ -34,7 +34,7 @@ const playerSchema = new mongoose.Schema({
     },
 
     // Votes
-    jury_vote: {
+    vote_jury: {
         type: mongoose.Types.ObjectId,
         ref: "Player"
     }

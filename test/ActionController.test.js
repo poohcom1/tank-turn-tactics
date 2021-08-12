@@ -208,7 +208,7 @@ describe("ActionController: Immediate", () => {
                   player: votingPlayer,
                   params: {
                       playerId: votedPlayer._id,
-                      vote: "JURY"
+                      vote: "vote_jury"
                   }
               }
 
@@ -220,7 +220,7 @@ describe("ActionController: Immediate", () => {
           it("should set the vote", async () => {
               await voteReq(req, mockRes)
 
-              expect( ( await Player.findById(votingPlayer._id) ).jury_vote ).toStrictEqual(votedPlayer._id)
+              expect( ( await Player.findById(votingPlayer._id) ).vote_jury ).toStrictEqual(votedPlayer._id)
           })
 
           it("should prevent vote if the voting player is alive", async() => {

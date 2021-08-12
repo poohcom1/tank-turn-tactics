@@ -288,7 +288,7 @@ async function giveReq(req, res) {
 // Player controller
 async function voteReq(req, res) {
     voteReq.VOTE_TYPES = {
-        JURY: 'jury_vote'
+        JURY: 'vote_jury'
     }
 
     voteReq.voteTypeError = "Unknown voting type!"
@@ -298,8 +298,8 @@ async function voteReq(req, res) {
     const player = req.player;
     const voteType = req.params.vote;
 
-    if (!Object.keys(voteReq.VOTE_TYPES).includes(voteType)) {
-        console.log(voteReq.voteTypeError)
+    if (!Object.values(voteReq.VOTE_TYPES).includes(voteType)) {
+        console.log(voteReq.voteTypeError + ": " + voteType)
         return res.status(403).send(voteReq.voteTypeError);
     }
 
@@ -323,7 +323,7 @@ async function voteReq(req, res) {
         return res.status(501).send(e)
     }
 
-    player[voteReq.VOTE_TYPES[voteType]] = votedPlayer._id;
+    player[voteType] = votedPlayer._id;
 
     try {
         await player.save();
