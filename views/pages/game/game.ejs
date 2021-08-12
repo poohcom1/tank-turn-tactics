@@ -1,31 +1,37 @@
 <%- include('../../partials/head.html') %>
 
-<style>
-    body {
-        background: none
-    }
-</style>
+<link rel="stylesheet" href="css/game.css"/>
 
 <body>
 
 <div id="statsPanel">
     <span id="deathMessage"></span>
-    <span>|</span>
+    <a id="openVote">VOTE</a>
+    <span>│</span>
     <span id="gameName"></span>
     <span id="gameTime"></span>
     <span id="actionInterval"></span>
     <span id="actionsPerInterval"></span>
-    <span>|</span>
+    <span>│</span>
     <span class="options">Range Mode:</span><a id="rangeMode" style="display: inline-block"></a>
     <span class="options">Range Display:</span><a id="rangeDisplay" style="display: inline-block"></a>
+
+
 </div>
 
 <div id="gameContainer"></div>
 
-<div id="winScreen" class="panel">
+<div id="winScreen" class="panel popupScreen">
     <h1>Mission Complete</h1>
     <p></p>
     <a href="/">Return to menu</a>
+</div>
+
+<div id="voteScreen" class="panel popupScreen">
+    <h2>Jury</h2>
+    <p></p>
+    <div id="votes"></div>
+    <a id="closeVote">Close</a>
 </div>
 
 <div id="infoPanel" class="panel">
@@ -114,7 +120,7 @@
 
 <script>
     let game;
-    let allPlayers = []
+    let ALL_PLAYERS = []
     let USER_PLAYER;
     let gameOver
     let deltaActions = 0
@@ -143,11 +149,17 @@
 
     function initGame(gameToInit, firstTime = false) {
         game = gameToInit;
+
         USER_PLAYER = game.players.find(player => player.user_id === game.user_id)
-        allPlayers = game.players
+        ALL_PLAYERS = game.players
+
         game.players = game.players.filter(p => p.health > 0)
 
         isDead = USER_PLAYER.health <= 0;
+        if (isDead) {
+            document.querySelector("#openVote").style.display = 'inline-block'
+        }
+
         gameOver = false;
 
         if (game.players.filter(player => player.health > 0).length <= 1) {
@@ -175,7 +187,7 @@
             reFetching = true;
             deltaActions = 0
         }
-        if (forced) document.body.className = 'waiting'
+        if (forced) showLoading()
         return fetch(`/game/${ game._id }`, { method: "GET" })
             .then(res => res.json())
             .then(newGame => {
@@ -193,9 +205,12 @@
             })
             .finally(() => {
                 reFetching = false;
-                document.body.className = ''
+                hideLoading()
             })
     }
+
+    function showLoading() {document.body.className = 'waiting'}
+    function hideLoading() {document.body.className = ''}
 
     const size = game.size
     const GRID_SIZE = 50;
@@ -249,10 +264,9 @@
     let tankIndex = 0;
 
     addEventListener('keydown', e => {
-
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
 
-            if (e.key === "ArrowDown" || e.key === 'ArrowUp') {
+            if (e.key === "ArrowDown" || e.key === 'ArrowRight') {
                 tankIndex++;
                 if (tankIndex >= tankDriver.components.length) tankIndex = 0
             } else {
@@ -265,6 +279,11 @@
             updateInfo()
         }
 
+        if (e.key === ' ' && userTank) {
+            selectedTank = userTank
+            centerTank(userTank)
+            updateInfo()
+        }
     })
 
     // --------------------------------------------BACKGROUND-------------------------------------------------
@@ -298,13 +317,13 @@
             const pos = selectedTank.player.position;
 
             for (let i = 0; i < game.size.height; i++) {
-                driver.canvas_ctx.fillStyle = pos.y === i ? c_gridLabelSelected : c_gridLabel
+                driver.canvas_ctx.fillStyle = pos.y === i ? selectedTank.player.color : c_gridLabel
                 driver.canvas_ctx.fillText(`${ i + 1 }`,
                     GRID_PADDING - GRID_SIZE + GRID_SIZE / 2,
                     i * GRID_SIZE + GRID_SIZE / 2 + GRID_PADDING)
             }
             for (let i = 0; i < game.size.width; i++) {
-                driver.canvas_ctx.fillStyle = pos.x === i ? c_gridLabelSelected : c_gridLabel
+                driver.canvas_ctx.fillStyle = pos.x === i ? selectedTank.player.color : c_gridLabel
                 driver.canvas_ctx.fillText(getChar(i),
                     i * GRID_SIZE + GRID_SIZE / 2 + GRID_PADDING,
                     GRID_PADDING - GRID_SIZE + GRID_SIZE / 2)
@@ -377,7 +396,7 @@
     updateInfo()
     setTimeout(updateLogs, 5)
 
-    // ---------------------------------------- INFO PANEL -------------------------
+    // ---------------------------------------- INFO PANEL ------------------------------------------------------------
     function updateInfo() {
         // Info panel
         const player = selectedTank.player;
@@ -417,41 +436,54 @@
             .then(() => console.log("Colors updated!"))
     }
 
+    // ---------------------------------------- LOG PANEL ------------------------------------------------------------
+
+
     function updateLogs(forced = true) {
         // Logs
         const logDiv = document.querySelector('#logs');
 
-        let currentLogs;
+        let newLogs;
 
         if (!this.previousActionLog) {
-            currentLogs = game.actionLog
+            newLogs = game.actionLog
             this.previousActionLog = game.actionLog;
         } else {
-            currentLogs = game.actionLog.slice(this.previousActionLog.length, game.actionLog.length)
+            newLogs = game.actionLog.slice(this.previousActionLog.length, game.actionLog.length)
+
             this.previousActionLog = game.actionLog;
         }
 
-        currentLogs.forEach(action => {
+        newLogs.forEach(action => {
             let date = new Date(action.createdAt)
             let message = "[" + date.toLocaleTimeString('en-GB', {
                 hour12: false,
                 hour: '2-digit',
                 minute: '2-digit'
             }) + "] ";
-            const player = allPlayers.find(p => p._id === action.player_id)
-            const target = allPlayers.find(p => p._id === action.target_id)
 
-            const playerStyle = player._id === USER_PLAYER._id ? 'userPlayerName' : 'playerName'
+            const player = ALL_PLAYERS.find(p => p._id === action.player_id)
+            const target = ALL_PLAYERS.find(p => p._id === action.target_id)
 
-            const playerName = shortenName(player.name)
+            let playerName;
+            let playerStyle;
+
+            if (player) {
+                playerStyle = player._id === USER_PLAYER._id ? 'userPlayerName' : 'playerName'
+                playerName = shortenName(player.name)
+            }
+
             let targetName;
-
             let targetStyle;
+
             if (target) {
                 targetStyle = target._id === USER_PLAYER._id ? 'userPlayerName' : 'playerName'
                 targetName = shortenName(target.name)
             }
-            const divStyle = player._id === USER_PLAYER._id || (target && target._id === USER_PLAYER._id) ? 'playerActionLog' : ''
+
+            let divStyle
+            if (player && target)
+                divStyle = player._id === USER_PLAYER._id || (target && target._id === USER_PLAYER._id) ? 'playerActionLog' : ''
 
 
             switch (action.action) {
@@ -469,15 +501,26 @@
                 case 'give':
                     message += `<span class="${ playerStyle }">${ playerName }</span> 🔰 <span class="${ targetStyle }">${ targetName }</span>`
                     break;
+                case 'vote':
+                    switch (action.vote) {
+                        case 'jury':
+                            if (action.vote_tied)
+                                message += `<span class="ghost">GHOSTS are undecided</span>`
+                            else
+                                message += `<span class="ghost">GHOSTS</span> 🔰 <span class="${ targetStyle }">${ targetName }</span>`
+                            break;
+                    }
+                    break;
                 default:
                     message = '';
             }
             if (message) logDiv.innerHTML += `<p class="${ divStyle }">${ message }</p>`
         })
 
-        if (forced) logDiv.scrollTop = logDiv.scrollHeight;
+        if (forced || newLogs.length > 0) logDiv.scrollTop = logDiv.scrollHeight;
     }
 
+    // ---------------------------------------- HINT PANEL ------------------------------------------------------------
     function updateHint(title, text, minorHint = ".", color = 'white') {
         if (!title) {
             document.querySelector('#hintPanel').style.display = 'none';
@@ -497,6 +540,8 @@
         document.querySelector('#hintPanel h3').style.color = color;
     }
 
+
+    // ---------------------------------------- UPGRADES PANEL ------------------------------------------------------------
     let actionsToAdd = {}
 
     function disableUpgrades() {
@@ -519,7 +564,6 @@
         document.querySelectorAll('.actionsToAdd').forEach(n => n.innerHTML = '')
     }
 
-    // Info panel
     document.querySelectorAll("#infoPanel .upgrade").forEach(node => {
         const upgradeName = node.dataset.upgrade;
         const actionCost = parseInt(node.dataset.cost);
@@ -588,7 +632,8 @@
         updateInfo()
     }
 
-    // Stats panel
+    // ---------------------------------------- STATS PANEL ------------------------------------------------------------
+
     const statsPanel = document.querySelector('#statsPanel')
 
     statsPanel.querySelector('#gameName').innerHTML = game.name;
@@ -604,6 +649,116 @@
     statsPanel.querySelector('#actionInterval').innerHTML = "Interval Time: " + game.turnTime + " hrs";
     statsPanel.querySelector('#actionsPerInterval').innerHTML = "Actions per interval: " + game.actionsPerInterval;
 
+    // ---------------------------------------- VOTE PANEL ------------------------------------------------------------
+
+    const voteScreen = document.querySelector("#voteScreen")
+
+    initVoteScreen()
+
+    function initVoteScreen() {
+        if (reFetching) return;
+
+        let voteType = "vote_jury"
+
+        const votes = calculateVotePercentages(voteType)
+
+        let message;
+
+        switch (voteType) {
+            case "vote_jury":
+                message = "Select a player to be awarded AP"
+                break;
+            default:
+                message = ""
+        }
+
+        voteScreen.querySelector("p").innerHTML = message;
+        voteScreen.querySelector("div#votes").innerHTML = ""
+
+        game.players.forEach(p => {
+            voteScreen.querySelector("div#votes").appendChild(createVoteRadio(p, votes[p._id], voteType))
+        })
+    }
+
+    function createVoteRadio(player, percent, name) {
+        const radioDiv = document.createElement("div")
+
+        const radioInput = document.createElement("input")
+        radioInput.id = player._id;
+        radioInput.type = 'radio'
+        radioInput.name = name
+        radioInput.value = player._id
+        radioInput.checked = USER_PLAYER[name] === player._id
+        radioInput.addEventListener("change", e => {
+            USER_PLAYER[name] = player._id
+            showLoading()
+            initVoteScreen()
+            radioDiv.querySelectorAll("input").forEach(i => i.disabled = true)
+            fetch(`/action/${ game._id }/vote/${ name }/player/${ e.target.value }`, { method: "PATCH" })
+                .catch(e => {
+                    alert(e)
+                    initVoteScreen()
+                })
+                .finally(() => {
+                    radioDiv.querySelectorAll("input").forEach(i => i.disabled = false)
+                    hideLoading()
+                })
+        })
+
+        const label = document.createElement("label")
+        label.htmlFor = player._id
+        label.innerHTML = player.name
+        label.style.color = player.color;
+
+        const text = document.createElement("span")
+        text.innerHTML = ": " + percent + "%";
+
+        radioDiv.appendChild(radioInput)
+        radioDiv.appendChild(label)
+        radioDiv.appendChild(text)
+        radioDiv.appendChild(document.createElement("br"))
+
+        return radioDiv;
+    }
+
+    function calculateVotePercentages(voteType) {
+        const deadPlayers = ALL_PLAYERS.filter(p => p.health <= 0)
+
+        const votes = {}
+
+        game.players.forEach(p => votes[p._id] = 0)
+
+        let voteCount = 0;
+
+        for (const voter of deadPlayers) {
+            if (voter[voteType]) {
+                votes[voter[voteType]]++;
+                voteCount++;
+            }
+        }
+
+        const votePercent = votes;
+
+        Object.keys(votePercent).forEach(k => {
+            if (voteCount > 0) {
+                votePercent[k] = votePercent[k]/voteCount*100;
+            } else {
+                votePercent[k] = 0;
+            }
+        })
+
+        return votePercent;
+    }
+
+    document.querySelector("#openVote").onclick = () => {
+        voteScreen.style.display = 'block'
+        initVoteScreen()
+    }
+
+    document.querySelector("#closeVote").onclick = () => {
+        voteScreen.style.display = 'none'
+    }
+
     setInterval(() => {
         if (!reFetching) refetch(false);
     }, 1000)
@@ -613,176 +768,3 @@
 
 <%- include('../../partials/footer.html') %>
 </body>
-
-
-<style>
-    html, body {
-        background-color: black;
-        max-height: fit-content;
-        padding-bottom: 40px;
-    }
-
-
-
-    .panel {
-        padding: 15px;
-        margin: 15px 30px 15px 15px;
-
-        border: rgba(158, 202, 237, 0.69) solid 1px;
-        box-shadow: 0 0 10px rgba(158, 202, 237, 0.45);
-    }
-
-    #infoPanel {
-        display: flex;
-        flex-direction: column;
-        position: fixed;
-        right: 0;
-        max-height: 70%;
-        overflow-y: hidden;
-        z-index: 300;
-    }
-
-    #infoPanel h3 {
-        margin-bottom: 0;
-    }
-
-    #infoPanel #id {
-        margin-top: 5px;
-        font-size: 10px;
-        color: #fffc4d;
-    }
-
-    #infoPanel p {
-        color: #b6dad7;
-    }
-
-
-    #infoPanel a {
-        font-size: 16px;
-        display: inline-block;
-        -webkit-user-select: none; /* Safari */
-        -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* IE10+/Edge */
-        user-select: none; /* Standard */
-    }
-
-    #infoPanel a.disabled {
-        color: gray;
-        cursor: default;
-    }
-
-    .upgrade {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    #infoPanel span span {
-        font-size: 10px;
-    }
-
-    .confirm {
-        display: flex;
-        justify-content: flex-end;
-    }
-
-    #logs {
-        overflow-y: scroll;
-        flex-grow: 1;
-        border-radius: 15px;
-    }
-
-    #logs p {
-        padding: 5px;
-        margin-right: 5px;
-    }
-
-    #logs p.playerActionLog {
-        background-color: rgba(255, 131, 131, 0.44);
-        border-radius: 10px;
-    }
-
-    #logs .playerName {
-        color: white;
-        font-weight: bold;
-    }
-
-    #logs .userPlayerName {
-        color: var(--contrast);
-        font-weight: bold;
-    }
-
-    #logs .targetName {
-        color: red;
-        font-weight: bold;
-    }
-
-    #logs .location {
-        font-weight: bold;
-        color: var(--contrast-blue);
-    }
-
-
-    #hintPanel {
-        position: fixed;
-        right: 0;
-        bottom: 0;
-        display: none;
-
-        z-index: 300;
-    }
-
-    #hintPanel h3 {
-        margin-bottom: 0;
-    }
-
-    #hintPanel p {
-        margin-top: 7px;
-        margin-bottom: 0;
-        font-size: 16px;
-    }
-
-    #hintPanel #minorHint {
-        margin-top: 0;
-        margin-bottom: 0;
-        color: gray;
-        font-size: 12px;
-    }
-
-    #hintPanel #minorHint.hidden {
-        color: black;
-    }
-
-    #winScreen {
-        display: none;
-        position: fixed;
-        left: 50%;
-        bottom: 50%;
-        transform: translateX(-50%);
-        background-color: black;
-        z-index: 100;
-    }
-
-    #statsPanel {
-        position: fixed;
-        margin: 10px;
-        z-index: 500;
-    }
-
-    #statsPanel span {
-        font-family: Uni-Sans, serif;
-        margin-right: 15px;
-    }
-
-    #statsPanel #deathMessage {
-        color: red
-    }
-
-    #statsPanel .options {
-        margin-right: 1px;
-    }
-
-    footer {
-        z-index: 500;
-    }
-</style>

@@ -3,11 +3,11 @@ const mongoose = require('mongoose')
 const { getMockReq, getMockRes } = require('@jest-mock/express')
 const Game = require('../models/GameModel.js')
 const Player = require('../models/PlayerModel.js')
-const { attackRequest, moveRequest, isAdjacent } = require("../controllers/ActionController.js");
+const { attackReq, moveReq, isAdjacent, voteReq } = require("../controllers/ActionController.js");
 
 DBHandler.setup();
 
-const mainPlayerData = {
+const defaultPlayerData = {
     name: "Player",
     position: { x: 0, y: 0 },
     user_id: mongoose.Types.ObjectId(),
@@ -43,7 +43,7 @@ describe("ActionController: Immediate", () => {
         let mainPlayer;
         let req;
         beforeEach(async () => {
-            mainPlayer = await new Player(mainPlayerData).save();
+            mainPlayer = await new Player(defaultPlayerData).save();
 
             req = {
                 player: mainPlayer,
@@ -56,11 +56,11 @@ describe("ActionController: Immediate", () => {
                 positions: [
                     {
                         x: 2,
-                        y: mainPlayerData.position.y
+                        y: defaultPlayerData.position.y
                     },
                     {
                         x: 3,
-                        y: mainPlayerData.position.y
+                        y: defaultPlayerData.position.y
                     }
                 ]
             }
@@ -69,7 +69,7 @@ describe("ActionController: Immediate", () => {
 
             const { res } = getMockRes();
 
-            await moveRequest(req, res);
+            await moveReq(req, res);
 
             expect(res.status).toHaveBeenCalledWith(403)
         })
@@ -78,21 +78,21 @@ describe("ActionController: Immediate", () => {
             req.body = {
                 positions: [ {
                     x: -1,
-                    y: mainPlayerData.position.y
+                    y: defaultPlayerData.position.y
                 } ]
             }
             req.game = defaultGameImmediate
 
             const { res } = getMockRes();
 
-            await moveRequest(req, res);
+            await moveReq(req, res);
 
             expect(res.status).toHaveBeenCalledWith(403)
         })
 
         it("prevent movement outside of grid", async () => {
             const playerOnGridEdge = new Player({
-                ...mainPlayerData,
+                ...defaultPlayerData,
                 range: 100
             })
 
@@ -100,7 +100,7 @@ describe("ActionController: Immediate", () => {
                 body: {
                     positions: [ {
                         x: defaultGameImmediate.size.width,
-                        y: mainPlayerData.position.y
+                        y: defaultPlayerData.position.y
                     } ]
                 },
                 game: defaultGameImmediate
@@ -108,7 +108,7 @@ describe("ActionController: Immediate", () => {
 
             const { res } = getMockRes();
 
-            await moveRequest({ ...req, player: playerOnGridEdge }, res);
+            await moveReq({ ...req, player: playerOnGridEdge }, res);
 
             expect(res.status).toHaveBeenCalledWith(403)
         })
@@ -124,7 +124,7 @@ describe("ActionController: Immediate", () => {
                 game_id: mongoose.Types.ObjectId()
             }).save()
 
-            mainPlayer = await new Player(mainPlayerData).save();
+            mainPlayer = await new Player(defaultPlayerData).save();
 
             req = {
                 player: mainPlayer,
@@ -139,33 +139,117 @@ describe("ActionController: Immediate", () => {
         it("should consume one action point", async () => {
             const { res } = getMockRes();
 
-            await attackRequest(req, res);
+            await attackReq(req, res);
 
             const fetchedMainPlayer = await Player.findById(mainPlayer._id)
 
-            expect(fetchedMainPlayer.actions).toBe(mainPlayerData.actions - 1);
+            expect(fetchedMainPlayer.actions).toBe(defaultPlayerData.actions - 1);
         })
 
         it("should consume the right amount of action points", async () => {
             const { res } = getMockRes();
             req.params.count = 2
 
-            await attackRequest(req, res);
+            await attackReq(req, res);
 
             const fetchedMainPlayer = await Player.findById(mainPlayer._id)
 
-            expect(fetchedMainPlayer.actions).toBe(mainPlayerData.actions - req.params.count);
+            expect(fetchedMainPlayer.actions).toBe(defaultPlayerData.actions - req.params.count);
         })
 
         it("should reduce the target health by 1", async () => {
             const { res } = getMockRes();
 
-            await attackRequest(req, res);
+            await attackReq(req, res);
 
             const fetchedTargetPlayer = await Player.findById(targetPlayer._id)
 
             expect(fetchedTargetPlayer.health).toBe(targetPlayer.health - 1);
         })
+    })
+
+    describe("votes", () => {
+        it("should return an error if voting type does not exist", async () => {
+            const game = await new Game({ ...defaultGameImmediate })
+            const votingPlayer = await new Player({...defaultPlayerData, game_id: game._id, user_id: mongoose.Types.ObjectId(), health: 0}).save();
+            const votedPlayer = await new Player({...defaultPlayerData, game_id: game._id, user_id: mongoose.Types.ObjectId(), health: 1}).save()
+
+            const req = {
+                game: game,
+                player: votingPlayer,
+                params: {
+                    playerId: votedPlayer._id,
+                    vote: "somethinqwrewrg"
+                }
+            }
+
+            const { res } = getMockRes()
+
+            await voteReq(req, res)
+
+            expect(res.send).toHaveBeenCalledWith(voteReq.voteTypeError)
+        })
+
+      describe("juryVote", () => {
+          let game;
+          let votingPlayer;
+          let votedPlayer;
+
+          let req;
+          let mockRes;
+
+          beforeEach(async () => {
+              game = await new Game({ ...defaultGameImmediate })
+              votingPlayer = await new Player({...defaultPlayerData, game_id: game._id, user_id: mongoose.Types.ObjectId(), health: 0}).save();
+              votedPlayer = await new Player({...defaultPlayerData, game_id: game._id, user_id: mongoose.Types.ObjectId(), health: 1}).save()
+
+              req = {
+                  game: game,
+                  player: votingPlayer,
+                  params: {
+                      playerId: votedPlayer._id,
+                      vote: "vote_jury"
+                  }
+              }
+
+              const { res } = getMockRes()
+
+              mockRes = res;
+          })
+
+          it("should set the vote", async () => {
+              await voteReq(req, mockRes)
+
+              expect( ( await Player.findById(votingPlayer._id) ).vote_jury ).toStrictEqual(votedPlayer._id)
+          })
+
+          it("should prevent vote if the voting player is alive", async() => {
+              req = {
+                  ...req,
+                  player: { ...votingPlayer, health: 1 },
+              }
+
+              await voteReq(req, mockRes)
+
+              expect(mockRes.send).toHaveBeenCalledWith(voteReq.playerDeadError)
+          })
+
+          it("should prevent vote if the voted player is dead", async() => {
+              const deadVotedPlayer = await new Player({ ...defaultPlayerData, game_id: game._id, health: 0 }).save();
+
+              req = {
+                  ...req,
+                  params: {
+                      ...req.params,
+                      playerId: deadVotedPlayer._id
+                  }
+              }
+
+              await voteReq(req, mockRes)
+
+              expect(mockRes.send).toHaveBeenCalledWith(voteReq.playerDeadError)
+          })
+      })
     })
 })
 
@@ -188,7 +272,7 @@ describe("ActionController: Queue", () => {
         let req;
 
         beforeEach(async () => {
-            mainPlayer = await new Player(mainPlayerData).save();
+            mainPlayer = await new Player(defaultPlayerData).save();
 
             req = {
                 player: mainPlayer,

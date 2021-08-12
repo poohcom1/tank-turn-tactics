@@ -1,28 +1,221 @@
-
-.gameContainer {
-    width: fit-content;
-    height: fit-content;
-    padding: 0;
-    margin: 0;
+html, body {
+    background-color: black;
+    max-height: fit-content;
+    padding-bottom: 40px;
 }
 
-.row {
-    width: fit-content;
-
-    overflow: hidden;
-
-    padding: 0;
-    margin: 0;
+body {
+    background: none
 }
 
-.box {
+.panel {
+    padding: 15px;
+    margin: 15px 30px 15px 15px;
+
+    border: rgba(158, 202, 237, 0.69) solid 1px;
+    box-shadow: 0 0 10px rgba(158, 202, 237, 0.45);
+}
+
+#infoPanel {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    right: 0;
+    top: 45px;
+    max-height: 65%;
+    overflow-y: hidden;
+    z-index: 300;
+}
+
+#infoPanel h3 {
+    margin-bottom: 0;
+}
+
+#infoPanel #id {
+    margin-top: 5px;
+    font-size: 10px;
+    color: #fffc4d;
+}
+
+#infoPanel p {
+    color: #b6dad7;
+}
+
+
+#infoPanel a {
+    font-size: 16px;
     display: inline-block;
-    border: 1px solid black;
-
-    /* height: 50px;
-    width: 50px; */
-    /* max-height: 50px;
-    max-width: 50px; */
-    padding: 0;
-    margin: 0;
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard */
 }
+
+#infoPanel a.disabled {
+    color: gray;
+    cursor: default;
+}
+
+.upgrade {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#infoPanel span span {
+    font-size: 10px;
+}
+
+.confirm {
+    display: flex;
+    justify-content: flex-end;
+}
+
+#logs {
+    overflow-y: scroll;
+    flex-grow: 1;
+    border-radius: 15px;
+    box-shadow: inset 0 0 15px black
+}
+
+#logs p {
+    padding: 5px;
+    margin-right: 5px;
+    position:relative;
+    z-index:-1;
+}
+
+#logs p.playerActionLog {
+    background-color: rgba(255, 131, 131, 0.44);
+    border-radius: 10px;
+}
+
+#logs .playerName {
+    color: white;
+    font-weight: bold;
+}
+
+#logs .userPlayerName {
+    color: var(--contrast);
+    font-weight: bold;
+}
+
+#logs .targetName {
+    color: red;
+    font-weight: bold;
+}
+
+#logs .ghost {
+    color: grey;
+    font-size: 16px;
+    font-style: italic;
+}
+
+#logs .location {
+    font-weight: bold;
+    color: var(--contrast-blue);
+}
+
+
+#hintPanel {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    display: none;
+
+    z-index: 300;
+}
+
+#hintPanel h3 {
+    margin-bottom: 0;
+}
+
+#hintPanel p {
+    margin-top: 7px;
+    margin-bottom: 0;
+    font-size: 16px;
+}
+
+#hintPanel #minorHint {
+    margin-top: 0;
+    margin-bottom: 0;
+    color: gray;
+    font-size: 12px;
+}
+
+#hintPanel #minorHint.hidden {
+    color: black;
+}
+
+#statsPanel {
+    position: fixed;
+    margin: 10px;
+    z-index: 500;
+    color: white;
+    pointer-events: none;
+}
+
+#statsPanel span {
+    font-family: Uni-Sans, serif;
+    margin-right: 16px;
+}
+
+#statsPanel #deathMessage {
+    color: #ff0000;
+    font-weight: bold;
+}
+
+#statsPanel .options {
+    margin-right: 1px;
+}
+
+#statsPanel a {
+    pointer-events: all;
+}
+
+footer {
+    z-index: 500;
+}
+
+.popupScreen {
+    display: none;
+    position: fixed;
+    left: 50%;
+    bottom: 50%;
+    transform: translateX(-50%);
+    background-color: black;
+    z-index: 100;
+}
+
+#winScreen {}
+
+#voteScreen {}
+
+#voteScreen h2 {
+    margin-bottom: 5px;
+}
+
+#voteScreen p {
+    color: gray;
+    font-size: 10px;
+    font-style: italic;
+}
+
+#voteScreen input {
+    width: 10px;
+    margin: 5px;
+}
+
+#voteScreen div div {
+    display: flex;
+    align-items: center
+}
+
+#voteScreen label {
+    margin-right: 5px;
+}
+
+#openVote {
+    display: none;
+}
+

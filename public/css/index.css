@@ -53,11 +53,15 @@ html {
 }
 
 body {
-    margin: 0;
-    height: 100%;
+    position: absolute;
+    top:0;
+    left:0;
     width: 100%;
-    background: url("../assets/gridwallpaper.jpg") black;
+    height: 100%;
+    margin: 0;
+
     background-size: 100%;
+    background: black url("../assets/gridwallpaper.jpg") fixed;
     color: var(--secondary);
 }
 
@@ -202,16 +206,6 @@ select {
     color: var(--error)
 }
 
-.card {
-    width: fit-content;
-    padding: 15px;
-
-    border-radius: 15px;
-
-    box-shadow: gray 0 0 15px;
-    background-color: var(--card-background);
-}
-
 .section {
     overflow: hidden;
 }
@@ -230,6 +224,7 @@ select {
     background-color: rgba(0, 0, 0, 0.56);
     box-shadow: 0 0 5px 25px rgba(0, 0, 0, 0.56);
     overflow-y: scroll;
+    padding-bottom: 20px;
 }
 
 /* Scrollbar */
