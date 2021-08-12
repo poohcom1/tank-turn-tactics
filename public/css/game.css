@@ -21,7 +21,8 @@ body {
     flex-direction: column;
     position: fixed;
     right: 0;
-    max-height: 70%;
+    top: 45px;
+    max-height: 65%;
     overflow-y: hidden;
     z-index: 300;
 }
@@ -74,11 +75,14 @@ body {
     overflow-y: scroll;
     flex-grow: 1;
     border-radius: 15px;
+    box-shadow: inset 0 0 15px black
 }
 
 #logs p {
     padding: 5px;
     margin-right: 5px;
+    position:relative;
+    z-index:-1;
 }
 
 #logs p.playerActionLog {
