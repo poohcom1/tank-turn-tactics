@@ -1,5 +1,7 @@
 # Tank Turn Tactics
 
+## Workflow
+The `master` branch is only for deployment. All pull requests that directly affects the internal code should be merged into the `develop`. It is also recommended to fork the `develop` rather than `master` for the latest code.
 
 ## Setup
 1. Copy the `sample.env` file and rename it to `.env` to set up environment variables.
@@ -75,7 +77,7 @@ root
 
 - [ ] **Action Queue**: Actions are performed all at once at the end of the day.
 - [ ] **Fog of war**: Sight is included as a stat alongside range. Player can only see up to their sight stat, even if their range is greater.
-- [ ] **Spying**: Actions are not known until they are executed at the end of the day. However, actions will be broadcasted to 
+- [ ] **Spying**: In action queue mode, actions are not known until they are executed at the end of the day. However, actions will be broadcasted to 
    anyone online at the moment. This would add the possibility of 'spying' on other players.
-- [x] **Loot**: Players are awarded half the action points of those they kill.
+- [x] **Loot**: Players are awarded all of the action points of those they kill.
 - [ ] **Bounty**: Each day, players are assigned the name of another random player. If they kill said player, they will receive all of that player's action points.
