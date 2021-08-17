@@ -2,9 +2,9 @@
 
 
 ## Setup
-1. Copy the `sample.env` file and rename it to `.env` to set up environment variables
-2. Run `npm install` to install dependencies
-3. Start the server with `npm run start:dev` or `npm run start:debug` if you want stack trace
+1. Copy the `sample.env` file and rename it to `.env` to set up environment variables.
+2. Run `npm install` to install dependencies.
+3. Start the server with `npm run start:dev` or `npm run start:debug` if you want stack trace.
 
 ## Project Structure
 ```
@@ -55,27 +55,27 @@ root
 
 ### Design Philosophy
 
- - All mechanics should be a tool to build either trust or distrust
- - Dead players should continue to have a role in the game
+ - All mechanics should build either trust or distrust.
+ - Dead players should continue to have a role in the game.
 
-### Design Points
+### Features
 
-#### Default
+#### The Default Game
 
- - Game is played asynchronously on a grid
- - Each player controls a tank with health. If the health reaches zero, they lose
- - Each have actions point which they gain at a certain time every day
- - Actions point can be spent in 3 ways: combat, movement, or upgrades
-    - Combat: Attack another player
-    - Movement: Move to a different position
-    - Upgrade: Upgrade the range of the tank
- - Dead players can vote on an alive player to award an action point to
-    
-#### Extended Designs
+ - The game is played asynchronously on a grid.
+ - Each player controls a tank which start with 3 health points. If the health of the tank reaches zero, they lose.
+ - They each gain action points at regular intervals.
+ - Action points can be spent in 3 ways:
+    - Attack another player within the range of the tank
+    - Move one square
+    - Upgrade the range of the tank by one square
+ - Dead players vote each day on which alive player to award an action point to.
 
-- [ ] **Action Queue**: Actions are performed all at once at the end of the day
-- [ ] **Fog of war**: Sight is included as a stat alongside range. Player can only see up to their sight stat, even if their range is greater
+#### Extra Features
+
+- [ ] **Action Queue**: Actions are performed all at once at the end of the day.
+- [ ] **Fog of war**: Sight is included as a stat alongside range. Player can only see up to their sight stat, even if their range is greater.
 - [ ] **Spying**: Actions are not known until they are executed at the end of the day. However, actions will be broadcasted to 
-   anyone online at the moment, to add the possibility of 'spying' on other players
-- [x] **Loot**: Players are awarded half the action points of anyone they killed
-- [ ] **Bounty**: Each day, players are assigned a bounty of another player at random. If they kill said player, they will received all of the action points of that player
+   anyone online at the moment. This would add the possibility of 'spying' on other players.
+- [x] **Loot**: Players are awarded half the action points of those they kill.
+- [ ] **Bounty**: Each day, players are assigned the name of another random player. If they kill said player, they will receive all of that player's action points.
